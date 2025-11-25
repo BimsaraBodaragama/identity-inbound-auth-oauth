@@ -532,11 +532,11 @@ public class OAuthApplicationMgtListener extends AbstractApplicationMgtListener 
                 AuthorizationGrantCacheKey grantCacheKey = new AuthorizationGrantCacheKey(accessToken);
                 AuthorizationGrantCache.getInstance().clearCacheEntryByToken(grantCacheKey);
                 OAuthCacheKey oauthCacheKey = new OAuthCacheKey(accessToken);
-                CacheEntry oauthCacheEntry = OAuthCache.getInstance().getValueFromCache(oauthCacheKey);
-                if (oauthCacheEntry != null) {
-                    OAuthCache.getInstance().clearCacheEntry(oauthCacheKey);
-                    OAuthCache.getInstance().clearCacheEntry(oauthCacheKey, tenantDomain);
-                }
+                
+                // Clearing the cache entry from OAuthCache regardless if the cache entry exists or not, since we 
+                // need to propagate the cache invalidation message in a clustered setup.
+                OAuthCache.getInstance().clearCacheEntry(oauthCacheKey);
+                OAuthCache.getInstance().clearCacheEntry(oauthCacheKey, tenantDomain);
             }
         }
     }
