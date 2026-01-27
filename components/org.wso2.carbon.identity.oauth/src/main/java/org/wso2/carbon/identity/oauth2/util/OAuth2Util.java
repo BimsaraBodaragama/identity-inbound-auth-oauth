@@ -3424,6 +3424,7 @@ public class OAuth2Util {
             if (isJWTX5tHexifyingRequired()) {
                 // Handle x5t.
                 if (IdentityUtil.getProperty(JWT_X5T_ENABLED) == null) {
+                    int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
                     headerBuilder.x509CertThumbprint(new Base64URL(getThumbPrint(tenantDomain, tenantId)));
                 } else if (Boolean.parseBoolean(IdentityUtil.getProperty(JWT_X5T_ENABLED))) {
                     /* When x5t enable is set, set the hexified SHA-1 for x5t header parameter. */
