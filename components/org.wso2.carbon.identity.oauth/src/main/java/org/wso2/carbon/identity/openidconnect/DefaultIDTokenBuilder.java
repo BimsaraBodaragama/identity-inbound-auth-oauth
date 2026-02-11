@@ -120,134 +120,141 @@ public class DefaultIDTokenBuilder implements org.wso2.carbon.identity.openidcon
             IdentityUtil.threadLocalProperties.get().put(IdentityCoreConstants.IS_SYSTEM_APPLICATION,
                     IdentityTenantUtil.isSystemApplication(spTenantDomain, clientId));
         }
-        String requestURL = tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getHttpServletRequestWrapper()
-                .getRequestURL().toString();
-        String idTokenIssuer = OAuth2Util.getIdTokenIssuer(spTenantDomain, clientId,
-                OAuth2Util.isMtlsRequest(requestURL));
-        String accessToken = tokenRespDTO.getAccessToken();
-        JWSAlgorithm idTokenSignatureAlgorithm = signatureAlgorithm;
-
-        // Initialize OAuthAppDO using the client ID.
-        OAuthAppDO oAuthAppDO;
         try {
-            oAuthAppDO = OAuth2Util.getAppInformationByClientId(clientId, spTenantDomain);
-        } catch (InvalidOAuthClientException e) {
-            String error = "Error occurred while getting app information for client_id: " + clientId;
-            throw new IdentityOAuth2Exception(error, e);
-        }
-        // Retrieve application id token signature algorithm
-        if (StringUtils.isNotEmpty(oAuthAppDO.getIdTokenSignatureAlgorithm())) {
-            idTokenSignatureAlgorithm = OAuth2Util.mapSignatureAlgorithmForJWSAlgorithm(
-                    oAuthAppDO.getIdTokenSignatureAlgorithm());
-        }
+            String requestURL = tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getHttpServletRequestWrapper()
+                    .getRequestURL().toString();
+            String idTokenIssuer = OAuth2Util.getIdTokenIssuer(spTenantDomain, clientId,
+                    OAuth2Util.isMtlsRequest(requestURL));
+            String accessToken = tokenRespDTO.getAccessToken();
+            JWSAlgorithm idTokenSignatureAlgorithm = signatureAlgorithm;
 
-        long idTokenValidityInMillis = getIDTokenExpiryInMillis(oAuthAppDO);
-        long currentTimeInMillis = Calendar.getInstance().getTimeInMillis();
-
-        AuthenticatedUser authorizedUser = tokenReqMsgCtxt.getAuthorizedUser();
-        String subjectClaim = getSubjectClaim(tokenReqMsgCtxt, tokenRespDTO, clientId, spTenantDomain, authorizedUser);
-        // Get subject identifier according to the configured subject type.
-        subjectClaim = OIDCClaimUtil.getSubjectClaim(subjectClaim, oAuthAppDO);
-
-        String nonceValue = null;
-        String idpSessionKey = null;
-        long authTime = 0;
-        String acrValue = null;
-        List<String> amrValues = Collections.emptyList();
-
-        // AuthorizationCode only available for authorization code grant type
-        if (getAuthorizationCode(tokenReqMsgCtxt) != null) {
-            AuthorizationGrantCacheEntry authzGrantCacheEntry =
-                    getAuthorizationGrantCacheEntryFromCode(getAuthorizationCode(tokenReqMsgCtxt));
-            if (authzGrantCacheEntry != null) {
-                nonceValue = authzGrantCacheEntry.getNonceValue();
-                acrValue = authzGrantCacheEntry.getSelectedAcrValue();
-                if (isAuthTimeRequired(authzGrantCacheEntry)) {
-                    authTime = authzGrantCacheEntry.getAuthTime();
-                }
-                amrValues = authzGrantCacheEntry.getAmrList();
-                idpSessionKey = getIdpSessionKey(authzGrantCacheEntry);
+            // Initialize OAuthAppDO using the client ID.
+            OAuthAppDO oAuthAppDO;
+            try {
+                oAuthAppDO = OAuth2Util.getAppInformationByClientId(clientId, spTenantDomain);
+            } catch (InvalidOAuthClientException e) {
+                String error = "Error occurred while getting app information for client_id: " + clientId;
+                throw new IdentityOAuth2Exception(error, e);
             }
-        } else {
-            amrValues = tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getAuthenticationMethodReferences();
-            if (OAuthConstants.GrantTypes.REFRESH_TOKEN.equalsIgnoreCase(
-                    tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getGrantType())) {
-                AuthorizationGrantCacheEntry authorizationGrantCacheEntryFromToken =
-                        getAuthorizationGrantCacheEntryFromToken(tokenRespDTO.getAccessToken());
-                if (authorizationGrantCacheEntryFromToken != null) {
-                    if (isAuthTimeRequired(authorizationGrantCacheEntryFromToken)) {
-                        authTime = authorizationGrantCacheEntryFromToken.getAuthTime();
+            // Retrieve application id token signature algorithm
+            if (StringUtils.isNotEmpty(oAuthAppDO.getIdTokenSignatureAlgorithm())) {
+                idTokenSignatureAlgorithm = OAuth2Util.mapSignatureAlgorithmForJWSAlgorithm(
+                        oAuthAppDO.getIdTokenSignatureAlgorithm());
+            }
+
+            long idTokenValidityInMillis = getIDTokenExpiryInMillis(oAuthAppDO);
+            long currentTimeInMillis = Calendar.getInstance().getTimeInMillis();
+
+            AuthenticatedUser authorizedUser = tokenReqMsgCtxt.getAuthorizedUser();
+            String subjectClaim =
+                    getSubjectClaim(tokenReqMsgCtxt, tokenRespDTO, clientId, spTenantDomain, authorizedUser);
+            // Get subject identifier according to the configured subject type.
+            subjectClaim = OIDCClaimUtil.getSubjectClaim(subjectClaim, oAuthAppDO);
+
+            String nonceValue = null;
+            String idpSessionKey = null;
+            long authTime = 0;
+            String acrValue = null;
+            List<String> amrValues = Collections.emptyList();
+
+            // AuthorizationCode only available for authorization code grant type
+            if (getAuthorizationCode(tokenReqMsgCtxt) != null) {
+                AuthorizationGrantCacheEntry authzGrantCacheEntry =
+                        getAuthorizationGrantCacheEntryFromCode(getAuthorizationCode(tokenReqMsgCtxt));
+                if (authzGrantCacheEntry != null) {
+                    nonceValue = authzGrantCacheEntry.getNonceValue();
+                    acrValue = authzGrantCacheEntry.getSelectedAcrValue();
+                    if (isAuthTimeRequired(authzGrantCacheEntry)) {
+                        authTime = authzGrantCacheEntry.getAuthTime();
+                    }
+                    amrValues = authzGrantCacheEntry.getAmrList();
+                    idpSessionKey = getIdpSessionKey(authzGrantCacheEntry);
+                }
+            } else {
+                amrValues = tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getAuthenticationMethodReferences();
+                if (OAuthConstants.GrantTypes.REFRESH_TOKEN.equalsIgnoreCase(
+                        tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getGrantType())) {
+                    AuthorizationGrantCacheEntry authorizationGrantCacheEntryFromToken =
+                            getAuthorizationGrantCacheEntryFromToken(tokenRespDTO.getAccessToken());
+                    if (authorizationGrantCacheEntryFromToken != null) {
+                        if (isAuthTimeRequired(authorizationGrantCacheEntryFromToken)) {
+                            authTime = authorizationGrantCacheEntryFromToken.getAuthTime();
+                        }
+                    }
+                }
+                if (!OAuthConstants.GrantTypes.PASSWORD.equalsIgnoreCase(
+                        tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getGrantType())) {
+                    idpSessionKey = getIdpSessionKey(accessToken);
+                    if (idpSessionKey == null && tokenReqMsgCtxt.getProperty(SESSION_IDENTIFIER) != null) {
+                        idpSessionKey = tokenReqMsgCtxt.getProperty(SESSION_IDENTIFIER).toString();
                     }
                 }
             }
-            if (!OAuthConstants.GrantTypes.PASSWORD.equalsIgnoreCase(
-                    tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getGrantType())) {
-                idpSessionKey = getIdpSessionKey(accessToken);
-                if (idpSessionKey == null && tokenReqMsgCtxt.getProperty(SESSION_IDENTIFIER) != null) {
-                    idpSessionKey = tokenReqMsgCtxt.getProperty(SESSION_IDENTIFIER).toString();
+
+            if (log.isDebugEnabled()) {
+                log.debug(buildDebugMessage(idTokenIssuer, subjectClaim, nonceValue, idTokenValidityInMillis,
+                        currentTimeInMillis));
+            }
+
+            List<String> audience = OAuth2Util.getOIDCAudience(clientId, oAuthAppDO);
+
+            JWTClaimsSet.Builder jwtClaimsSetBuilder = new JWTClaimsSet.Builder();
+            jwtClaimsSetBuilder.jwtID(UUID.randomUUID().toString());
+            jwtClaimsSetBuilder.issuer(idTokenIssuer);
+            jwtClaimsSetBuilder.audience(audience);
+            jwtClaimsSetBuilder.claim(AZP, clientId);
+            jwtClaimsSetBuilder.expirationTime(getIdTokenExpiryInMillis(idTokenValidityInMillis, currentTimeInMillis));
+            jwtClaimsSetBuilder.issueTime(new Date(currentTimeInMillis));
+            jwtClaimsSetBuilder.notBeforeTime(new Date(currentTimeInMillis));
+            if (authTime != 0) {
+                jwtClaimsSetBuilder.claim(AUTH_TIME, authTime / 1000);
+            }
+            if (nonceValue != null) {
+                jwtClaimsSetBuilder.claim(NONCE, nonceValue);
+            }
+            if (StringUtils.isNotEmpty(acrValue)) {
+                jwtClaimsSetBuilder.claim(OAuthConstants.ACR, acrValue);
+            }
+            if (amrValues != null) {
+                jwtClaimsSetBuilder.claim(OAuthConstants.AMR, translateAmrToResponse(amrValues));
+            }
+            if (idpSessionKey != null) {
+                jwtClaimsSetBuilder.claim(IDP_SESSION_KEY, idpSessionKey);
+            }
+            AccessTokenExtendedAttributes accessTokenExtendedAttributes =
+                    tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getAccessTokenExtendedAttributes();
+            if (accessTokenExtendedAttributes != null && accessTokenExtendedAttributes.getParameters() != null) {
+                for (Map.Entry<String, String> entry : accessTokenExtendedAttributes.getParameters().entrySet()) {
+                    jwtClaimsSetBuilder.claim(entry.getKey(), entry.getValue());
                 }
             }
-        }
+            setUserRealm(authorizedUser, jwtClaimsSetBuilder);
+            setAdditionalClaims(tokenReqMsgCtxt, tokenRespDTO, jwtClaimsSetBuilder);
 
-        if (log.isDebugEnabled()) {
-            log.debug(buildDebugMessage(idTokenIssuer, subjectClaim, nonceValue, idTokenValidityInMillis,
-                    currentTimeInMillis));
-        }
-
-        List<String> audience = OAuth2Util.getOIDCAudience(clientId, oAuthAppDO);
-
-        JWTClaimsSet.Builder jwtClaimsSetBuilder = new JWTClaimsSet.Builder();
-        jwtClaimsSetBuilder.jwtID(UUID.randomUUID().toString());
-        jwtClaimsSetBuilder.issuer(idTokenIssuer);
-        jwtClaimsSetBuilder.audience(audience);
-        jwtClaimsSetBuilder.claim(AZP, clientId);
-        jwtClaimsSetBuilder.expirationTime(getIdTokenExpiryInMillis(idTokenValidityInMillis, currentTimeInMillis));
-        jwtClaimsSetBuilder.issueTime(new Date(currentTimeInMillis));
-        jwtClaimsSetBuilder.notBeforeTime(new Date(currentTimeInMillis));
-        if (authTime != 0) {
-            jwtClaimsSetBuilder.claim(AUTH_TIME, authTime / 1000);
-        }
-        if (nonceValue != null) {
-            jwtClaimsSetBuilder.claim(NONCE, nonceValue);
-        }
-        if (StringUtils.isNotEmpty(acrValue)) {
-            jwtClaimsSetBuilder.claim(OAuthConstants.ACR, acrValue);
-        }
-        if (amrValues != null) {
-            jwtClaimsSetBuilder.claim(OAuthConstants.AMR, translateAmrToResponse(amrValues));
-        }
-        if (idpSessionKey != null) {
-            jwtClaimsSetBuilder.claim(IDP_SESSION_KEY, idpSessionKey);
-        }
-        AccessTokenExtendedAttributes accessTokenExtendedAttributes =
-                tokenReqMsgCtxt.getOauth2AccessTokenReqDTO().getAccessTokenExtendedAttributes();
-        if (accessTokenExtendedAttributes != null && accessTokenExtendedAttributes.getParameters() != null) {
-            for (Map.Entry<String, String> entry : accessTokenExtendedAttributes.getParameters().entrySet()) {
-                jwtClaimsSetBuilder.claim(entry.getKey(), entry.getValue());
+            tokenReqMsgCtxt.addProperty(OAuthConstants.ACCESS_TOKEN, accessToken);
+            tokenReqMsgCtxt.addProperty(MultitenantConstants.TENANT_DOMAIN, getSpTenantDomain(tokenReqMsgCtxt));
+            if (tokenRespDTO.getIsConsentedToken()) {
+                tokenReqMsgCtxt.setConsentedToken(tokenRespDTO.getIsConsentedToken());
             }
+            jwtClaimsSetBuilder.subject(subjectClaim);
+            JWTClaimsSet jwtClaimsSet = handleOIDCCustomClaims(tokenReqMsgCtxt, jwtClaimsSetBuilder);
+
+            if (isInvalidToken(jwtClaimsSet)) {
+                throw new IDTokenValidationFailureException(
+                        "Error while validating ID Token token for required claims");
+            }
+
+            if (isUnsignedIDToken()) {
+                return new PlainJWT(jwtClaimsSet).serialize();
+            }
+
+
+            return getIDToken(clientId, spTenantDomain, jwtClaimsSet, oAuthAppDO,
+                    getSigningTenantDomain(tokenReqMsgCtxt), idTokenSignatureAlgorithm);
+        } finally {
+            // Clean up thread local to prevent thread local pollution across requests.
+            IdentityUtil.threadLocalProperties.get().remove(IdentityCoreConstants.IS_SYSTEM_APPLICATION);
         }
-        setUserRealm(authorizedUser, jwtClaimsSetBuilder);
-        setAdditionalClaims(tokenReqMsgCtxt, tokenRespDTO, jwtClaimsSetBuilder);
-
-        tokenReqMsgCtxt.addProperty(OAuthConstants.ACCESS_TOKEN, accessToken);
-        tokenReqMsgCtxt.addProperty(MultitenantConstants.TENANT_DOMAIN, getSpTenantDomain(tokenReqMsgCtxt));
-        if (tokenRespDTO.getIsConsentedToken()) {
-            tokenReqMsgCtxt.setConsentedToken(tokenRespDTO.getIsConsentedToken());
-        }
-        jwtClaimsSetBuilder.subject(subjectClaim);
-        JWTClaimsSet jwtClaimsSet = handleOIDCCustomClaims(tokenReqMsgCtxt, jwtClaimsSetBuilder);
-
-        if (isInvalidToken(jwtClaimsSet)) {
-            throw new IDTokenValidationFailureException("Error while validating ID Token token for required claims");
-        }
-
-        if (isUnsignedIDToken()) {
-            return new PlainJWT(jwtClaimsSet).serialize();
-        }
-
-
-        return getIDToken(clientId, spTenantDomain, jwtClaimsSet, oAuthAppDO, getSigningTenantDomain(tokenReqMsgCtxt),
-                idTokenSignatureAlgorithm);
     }
 
     @Override
