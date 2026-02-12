@@ -42,6 +42,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -78,6 +79,7 @@ import org.wso2.carbon.identity.claim.metadata.mgt.model.ExternalClaim;
 import org.wso2.carbon.identity.core.ServiceURL;
 import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.core.URLBuilderException;
+import org.wso2.carbon.identity.core.util.IdentityCoreConstants;
 import org.wso2.carbon.identity.core.util.IdentityDatabaseUtil;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
@@ -662,6 +664,9 @@ public class OAuth2AuthzEndpointTest extends TestOAuthEndpointBase {
                                 new InvalidRequestExceptionMapper();
                         response = invalidRequestExceptionMapper.toResponse(ire);
                     }
+                    Assert.assertNull(IdentityUtil.threadLocalProperties.get().get(
+                                    IdentityCoreConstants.IS_SYSTEM_APPLICATION),
+                            "Thread local should be cleaned up after ID token building.");
 
                     if (!StringUtils.equals(responseMode, RESPONSE_MODE_FORM_POST)) {
                         assertEquals(response.getStatus(), expectedStatus, "Unexpected HTTP response status");

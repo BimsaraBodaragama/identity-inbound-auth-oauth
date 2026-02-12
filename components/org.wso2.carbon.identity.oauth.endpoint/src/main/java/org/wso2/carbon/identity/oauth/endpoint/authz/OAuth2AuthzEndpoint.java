@@ -152,6 +152,9 @@ public class OAuth2AuthzEndpoint {
             return AuthzUtil.handleOAuthSystemException(oAuthMessage, e);
         } finally {
             AuthzUtil.handleCachePersistence(oAuthMessage);
+
+            // Clean up thread local to prevent thread local pollution across requests.
+            IdentityUtil.threadLocalProperties.get().remove(IdentityCoreConstants.IS_SYSTEM_APPLICATION);
             if (!IdentityTenantUtil.isTenantedSessionsEnabled()) {
                 FrameworkUtils.endTenantFlow();
             }

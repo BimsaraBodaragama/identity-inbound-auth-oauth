@@ -50,6 +50,7 @@ import org.wso2.carbon.identity.common.testng.WithKeyStore;
 import org.wso2.carbon.identity.common.testng.WithRealmService;
 import org.wso2.carbon.identity.core.IdentityKeyStoreResolver;
 import org.wso2.carbon.identity.core.persistence.JDBCPersistenceManager;
+import org.wso2.carbon.identity.core.util.IdentityCoreConstants;
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverConstants;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
@@ -330,6 +331,8 @@ public class DefaultIDTokenBuilderTest {
         Assert.assertTrue(expirationTime > (new Date()).getTime());
         Long issueTime = ((Date) claims.getClaim("iat")).getTime();
         Assert.assertTrue(issueTime <= (new Date()).getTime());
+        Assert.assertNull(IdentityUtil.threadLocalProperties.get().get(IdentityCoreConstants.IS_SYSTEM_APPLICATION),
+                "Thread local should be cleaned up after ID token building.");
     }
 
     @Test
