@@ -4817,8 +4817,18 @@ public class OAuth2Util {
         if (IdentityTenantUtil.shouldUseTenantQualifiedURLs() && StringUtils.isEmpty(PrivilegedCarbonContext.
                 getThreadLocalCarbonContext().getApplicationResidentOrganizationId())) {
             try {
-                return isMtlsRequest ? OAuthURL.getOAuth2MTLSTokenEPUrl() :
-                        ServiceURLBuilder.create().addPath(OAUTH2_TOKEN_EP_URL).build().getAbsolutePublicURL();
+                if (isMtlsRequest) {
+                    return OAuthURL.getOAuth2MTLSTokenEPUrl();
+                }
+
+                if (OAuthServerConfiguration.getInstance().getIsUseEntityIDAsIssuerEnabled()) {
+                    return getResidentIdpEntityId(tenantDomain);
+                }
+
+                return ServiceURLBuilder.create()
+                        .addPath(OAUTH2_TOKEN_EP_URL)
+                        .build()
+                        .getAbsolutePublicURL();
             } catch (URLBuilderException e) {
                 String errorMsg = String.format("Error while building the absolute url of the context: '%s',  for the" +
                         " tenant domain: '%s'", OAUTH2_TOKEN_EP_URL, tenantDomain);
@@ -4834,8 +4844,15 @@ public class OAuth2Util {
 
         if (IdentityTenantUtil.shouldUseTenantQualifiedURLs()) {
             try {
-                return isMtlsRequest ? OAuthURL.getOAuth2MTLSTokenEPUrl() :
-                        ServiceURLBuilder.create().addPath(OAUTH2_TOKEN_EP_URL).setSkipDomainBranding(
+                if (isMtlsRequest) {
+                    return OAuthURL.getOAuth2MTLSTokenEPUrl();
+                }
+
+                if (OAuthServerConfiguration.getInstance().getIsUseEntityIDAsIssuerEnabled()) {
+                    return getResidentIdpEntityId(tenantDomain);
+                }
+
+                return ServiceURLBuilder.create().addPath(OAUTH2_TOKEN_EP_URL).setSkipDomainBranding(
                                 PORTAL_APP_IDS.contains(clientId)).build().getAbsolutePublicURL();
             } catch (URLBuilderException e) {
                 String errorMsg = String.format("Error while building the absolute url of the context: '%s',  for the" +
@@ -6124,7 +6141,8 @@ public class OAuth2Util {
      */
     public static boolean isMtlsRequest(String requestUrl) {
 
-        return requestUrl.contains(IdentityUtil.getProperty(OAuthConstants.MTLS_HOSTNAME));
+        return Boolean.parseBoolean(IdentityUtil.getProperty(OAuthConstants.MUTUAL_TLS_ALIASES_ENABLED))
+         && requestUrl.contains(IdentityUtil.getProperty(OAuthConstants.MTLS_HOSTNAME));
     }
 
     /**

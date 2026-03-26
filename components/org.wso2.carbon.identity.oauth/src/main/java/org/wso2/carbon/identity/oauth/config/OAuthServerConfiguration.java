@@ -245,6 +245,7 @@ public class OAuthServerConfiguration {
     private boolean addTenantDomainToIdTokenEnabled = false;
     private boolean addUserstoreDomainToIdTokenEnabled = false;
     private boolean requestObjectEnabled = true;
+    private boolean useEntityIDAsIssuer = false;
 
     //default token types
     public static final String DEFAULT_TOKEN_TYPE = "Default";
@@ -1715,6 +1716,17 @@ public class OAuthServerConfiguration {
 
     public String getUserInfoJWTSignatureAlgorithm() {
         return userInfoJWTSignatureAlgorithm;
+    }
+
+    /**
+     * Returns whether to use the Entity ID as the issuer in the ID token.
+     *
+     * @return True if the service provider is configured to use the Entity ID as the issuer in the ID token,
+     *         false otherwise.
+     */
+    public boolean getIsUseEntityIDAsIssuerEnabled() {
+
+        return useEntityIDAsIssuer;
     }
 
     /**
@@ -3726,6 +3738,14 @@ public class OAuthServerConfiguration {
                 isJWTSignedWithSPKey = Boolean.parseBoolean(openIDConnectConfigElem.getFirstChildWithName(
                         getQNameWithIdentityNS(ConfigElements.OPENID_CONNECT_SIGN_JWT_WITH_SP_KEY)).getText().trim());
             }
+
+            if (openIDConnectConfigElem.getFirstChildWithName(
+                    getQNameWithIdentityNS(ConfigElements.OPENID_CONNECT_USE_ENTITY_ID_AS_ISSUER)) != null) {
+                useEntityIDAsIssuer = Boolean.parseBoolean(openIDConnectConfigElem.getFirstChildWithName(
+                                getQNameWithIdentityNS(ConfigElements.OPENID_CONNECT_USE_ENTITY_ID_AS_ISSUER))
+                                                                                                .getText().trim());
+            }
+
             if (openIDConnectConfigElem
                     .getFirstChildWithName(getQNameWithIdentityNS(ConfigElements.SUPPORTED_CLAIMS)) != null) {
                 String supportedClaimStr = openIDConnectConfigElem
@@ -4434,6 +4454,7 @@ public class OAuthServerConfiguration {
                 "ReturnOnlyAppAssociatedRolesInUserInfo";
 
         public static final String OPENID_CONNECT_SIGN_JWT_WITH_SP_KEY = "SignJWTWithSPKey";
+        public static final String OPENID_CONNECT_USE_ENTITY_ID_AS_ISSUER = "UseEntityIdAsIssuer";
         public static final String OPENID_CONNECT_IDTOKEN_CUSTOM_CLAIM_CALLBACK_HANDLER =
                 "IDTokenCustomClaimsCallBackHandler";
         public static final String OPENID_CONNECT_CONVERT_ORIGINAL_CLAIMS_FROM_ASSERTIONS_TO_OIDCDIALECT =
