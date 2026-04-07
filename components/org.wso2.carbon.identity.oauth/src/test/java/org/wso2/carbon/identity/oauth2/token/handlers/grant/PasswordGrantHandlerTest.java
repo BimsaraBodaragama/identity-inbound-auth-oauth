@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2017-2026, WSO2 LLC. (http://www.wso2.com).
  *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,7 +11,7 @@
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
+ * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
  */
@@ -43,6 +43,7 @@ import org.wso2.carbon.identity.oauth.internal.OAuthComponentServiceHolder;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2AccessTokenReqDTO;
 import org.wso2.carbon.identity.oauth2.internal.OAuth2ServiceComponentHolder;
+import org.wso2.carbon.identity.oauth2.model.RequestParameter;
 import org.wso2.carbon.identity.oauth2.token.OAuthTokenReqMessageContext;
 import org.wso2.carbon.identity.oauth2.token.OauthTokenIssuer;
 import org.wso2.carbon.user.core.UserCoreConstants;
@@ -168,6 +169,7 @@ public class PasswordGrantHandlerTest {
             when(oAuth2AccessTokenReqDTO.getClientId()).thenReturn(CLIENT_ID);
             when(oAuth2AccessTokenReqDTO.getTenantDomain()).thenReturn("wso2.com");
             when(oAuth2AccessTokenReqDTO.getResourceOwnerPassword()).thenReturn("randomPassword");
+            setRequestParameter();
 
             when(mockLog.isDebugEnabled()).thenReturn(true);
 
@@ -274,6 +276,7 @@ public class PasswordGrantHandlerTest {
             when(oAuth2AccessTokenReqDTO.getClientId()).thenReturn(CLIENT_ID);
             when(oAuth2AccessTokenReqDTO.getTenantDomain()).thenReturn("carbon.super");
             when(oAuth2AccessTokenReqDTO.getResourceOwnerPassword()).thenReturn("password");
+            setRequestParameter();
 
             identityUtil.when(() -> IdentityUtil.extractDomainFromName(anyString()))
                     .thenReturn(PRIMARY_DEFAULT_DOMAIN_NAME);
@@ -362,4 +365,13 @@ public class PasswordGrantHandlerTest {
         }
     }
 
+    private void setRequestParameter() {
+
+        RequestParameter[] requestParameters = new RequestParameter[3];
+        requestParameters[0] = new RequestParameter("username", "username");
+        requestParameters[1] = new RequestParameter("password", "password");
+        requestParameters[2] = new RequestParameter("grant_type", "password");
+
+        when(oAuth2AccessTokenReqDTO.getRequestParameters()).thenReturn(requestParameters);
+    }
 }

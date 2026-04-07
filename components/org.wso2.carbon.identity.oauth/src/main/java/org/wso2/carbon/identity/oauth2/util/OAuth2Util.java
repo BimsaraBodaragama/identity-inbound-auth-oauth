@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2025, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2013-2026, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -6440,5 +6440,24 @@ public class OAuth2Util {
         // This setting is only applicable if legacy session bound token behaviour is enabled.
         return isLegacySessionBoundTokenBehaviourEnabled() &&
                 Boolean.parseBoolean(IdentityUtil.getProperty(ALLOW_SESSION_BOUND_TOKENS_AFTER_IDLE_SESSION_EXPIRY));
+    }
+
+    /**
+     * Extracts the user identifier (username) from the token request parameters.
+     *
+     * @param tokenReq OAuth2AccessTokenReqDTO containing the token request parameters.
+     * @return The user identifier if present, otherwise null.
+     */
+    public static String getUserIdentifierFromRequest(OAuth2AccessTokenReqDTO tokenReq) {
+
+        if (tokenReq == null || tokenReq.getRequestParameters() == null
+                || tokenReq.getRequestParameters().length == 0) {
+            return null;
+        }
+        return Arrays.stream(tokenReq.getRequestParameters())
+                .filter(parameter -> USERNAME.equals(parameter.getKey()))
+                .map(parameter -> parameter.getValue()[0])
+                .findFirst()
+                .orElse(null);
     }
 }

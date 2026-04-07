@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2025, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2017-2026, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -454,7 +454,10 @@ public class AccessTokenIssuer {
             isValidGrant = authzGrantHandler.validateGrant(tokReqMsgCtx);
         } catch (IdentityOAuth2Exception e) {
             if (log.isDebugEnabled()) {
-                log.debug("Error occurred while validating grant", e);
+                Exception sanitizedError = new Exception(LoggerUtils.getSanitizedErrorMessage(
+                        e.getMessage(), OAuth2Util.getUserIdentifierFromRequest(tokenReqDTO)));
+                sanitizedError.setStackTrace(e.getStackTrace());
+                log.debug("Error occurred while validating grant", sanitizedError);
             }
             if (e.getErrorCode() != null) {
                 errorCode = e.getErrorCode();
@@ -1322,6 +1325,11 @@ public class AccessTokenIssuer {
                                     OAuthTokenReqMessageContext tokReqMsgCtx, OAuthAppDO oAuthAppDO)
             throws IdentityOAuth2Exception {
 
+        if (REFRESH_TOKEN.equals(grantType)) {
+            // Token binding values are already set to the OAuthTokenReqMessageContext.
+            return;
+        }
+
         if (StringUtils.isBlank(oAuthAppDO.getTokenBindingType())) {
             tokReqMsgCtx.setTokenBinding(null);
             return;
@@ -1332,11 +1340,6 @@ public class AccessTokenIssuer {
         if (!tokenBinderOptional.isPresent()) {
             throw new IdentityOAuth2Exception(
                     "Token binder for the binding type: " + oAuthAppDO.getTokenBindingType() + " is not registered.");
-        }
-
-        if (REFRESH_TOKEN.equals(grantType)) {
-            // Token binding values are already set to the OAuthTokenReqMessageContext.
-            return;
         }
 
         tokReqMsgCtx.setTokenBinding(null);

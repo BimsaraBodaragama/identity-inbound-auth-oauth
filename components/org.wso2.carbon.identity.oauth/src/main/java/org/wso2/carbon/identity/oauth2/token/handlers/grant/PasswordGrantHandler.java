@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2025, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2013-2026, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * WSO2 Inc. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -211,7 +211,8 @@ public class PasswordGrantHandler extends AbstractAuthorizationGrantHandler {
                 log.error(String.format("Invalid client of application : %s , " +
                                 "trying to authenticate for the user: %s ", serviceProvider.getApplicationName(),
                         tokenReq.getResourceOwnerUsername()));
-                throw new IdentityOAuth2Exception("Authentication failed for " + tokenReq.getResourceOwnerUsername());
+                throw new IdentityOAuth2Exception(
+                        "Authentication failed for " + OAuth2Util.getUserIdentifierFromRequest(tokenReq));
             }
 
             AuthenticationRequest authenticationRequest = new AuthenticationRequest();
@@ -356,7 +357,6 @@ public class PasswordGrantHandler extends AbstractAuthorizationGrantHandler {
                 IdentityUtil.getProperty(PUBLISH_PASSWORD_GRANT_LOGIN));
         boolean isShowAuthFailureReason =
                 OAuthServerConfiguration.getInstance().isShowAuthFailureReasonForPasswordGrant();
-        String genericErrorUserName = tokenReq.getResourceOwnerUsername();
         try {
             // Get the user store preference order supplier.
             UserStorePreferenceOrderSupplier<List<String>> userStorePreferenceOrderSupplier =
@@ -386,11 +386,6 @@ public class PasswordGrantHandler extends AbstractAuthorizationGrantHandler {
                 tenantAwareUserName = resolvedUserResult.getUser().getUsername();
                 userId = resolvedUserResult.getUser().getUserID();
                 tokenReq.setResourceOwnerUsername(tenantAwareUserName + "@" + userTenantDomain);
-            }
-
-            if (MultitenantConstants.SUPER_TENANT_DOMAIN_NAME.equalsIgnoreCase(MultitenantUtils.getTenantDomain
-                    (tokenReq.getResourceOwnerUsername())) || IdentityTenantUtil.isTenantQualifiedUrlsEnabled()) {
-                genericErrorUserName = tenantAwareUserName;
             }
 
             AbstractUserStoreManager userStoreManager = getUserStoreManager(userTenantDomain);
@@ -429,14 +424,16 @@ public class PasswordGrantHandler extends AbstractAuthorizationGrantHandler {
             }
             if (MultitenantConstants.SUPER_TENANT_DOMAIN_NAME.equalsIgnoreCase(MultitenantUtils.getTenantDomain
                     (tokenReq.getResourceOwnerUsername()))) {
-                throw new IdentityOAuth2Exception("Authentication failed for " + tenantAwareUserName);
+                throw new IdentityOAuth2Exception(
+                        "Authentication failed for " + OAuth2Util.getUserIdentifierFromRequest(tokenReq));
             }
             username = tokenReq.getResourceOwnerUsername();
             if (IdentityTenantUtil.isTenantQualifiedUrlsEnabled()) {
                 // For tenant qualified urls, no need to send fully qualified username in response.
                 username = tenantAwareUserName;
             }
-            throw new IdentityOAuth2Exception("Authentication failed for " + username);
+            throw new IdentityOAuth2Exception(
+                    "Authentication failed for " + OAuth2Util.getUserIdentifierFromRequest(tokenReq));
         } catch (UserStoreClientException e) {
             if (isPublishPasswordGrantLoginEnabled) {
                 publishAuthenticationData(tokenReq, false, serviceProvider);
@@ -445,7 +442,8 @@ public class PasswordGrantHandler extends AbstractAuthorizationGrantHandler {
             if (StringUtils.isNotBlank(e.getErrorCode())) {
                 message = e.getErrorCode() + " " + e.getMessage();
             }
-            message = isShowAuthFailureReason ? message : "Authentication failed for " + genericErrorUserName;
+            message = isShowAuthFailureReason ? message :
+                    "Authentication failed for " + OAuth2Util.getUserIdentifierFromRequest(tokenReq);
             throw new IdentityOAuth2Exception(message, e);
         } catch (UserStoreException e) {
             if (isPublishPasswordGrantLoginEnabled) {
@@ -471,10 +469,11 @@ public class PasswordGrantHandler extends AbstractAuthorizationGrantHandler {
                     message = errorCode + " " + identityException.getMessage();
                 }
             }
-            message = isShowAuthFailureReason ? message : "Authentication failed for " + genericErrorUserName;
+            message = isShowAuthFailureReason ? message :
+                    "Authentication failed for " + OAuth2Util.getUserIdentifierFromRequest(tokenReq);
             throw new IdentityOAuth2Exception(message, e);
         } catch (AuthenticationFailedException e) {
-            String message = "Authentication failed for the user: " + tokenReq.getResourceOwnerUsername();
+            String message = "Authentication failed for the user: " + OAuth2Util.getUserIdentifierFromRequest(tokenReq);
             if (log.isDebugEnabled()) {
                 log.debug(message, e);
             }
