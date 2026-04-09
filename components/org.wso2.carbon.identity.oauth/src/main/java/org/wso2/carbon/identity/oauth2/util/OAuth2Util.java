@@ -4814,15 +4814,18 @@ public class OAuth2Util {
 
     public static String getIdTokenIssuer(String tenantDomain, boolean isMtlsRequest) throws IdentityOAuth2Exception {
 
+        if (OAuthServerConfiguration.getInstance().getIsUseEntityIDAsIssuerEnabled()) {
+            String residentIdpEntityId = getResidentIdpEntityId(tenantDomain);
+            if (StringUtils.isNotBlank(residentIdpEntityId)) {
+                return residentIdpEntityId;
+            }
+        }
+
         if (IdentityTenantUtil.shouldUseTenantQualifiedURLs() && StringUtils.isEmpty(PrivilegedCarbonContext.
                 getThreadLocalCarbonContext().getApplicationResidentOrganizationId())) {
             try {
                 if (isMtlsRequest) {
                     return OAuthURL.getOAuth2MTLSTokenEPUrl();
-                }
-
-                if (OAuthServerConfiguration.getInstance().getIsUseEntityIDAsIssuerEnabled()) {
-                    return getResidentIdpEntityId(tenantDomain);
                 }
 
                 return ServiceURLBuilder.create()
@@ -4842,14 +4845,17 @@ public class OAuth2Util {
     public static String getIdTokenIssuer(String tenantDomain, String clientId, boolean isMtlsRequest)
             throws IdentityOAuth2Exception {
 
+        if (OAuthServerConfiguration.getInstance().getIsUseEntityIDAsIssuerEnabled()) {
+            String residentIdpEntityId = getResidentIdpEntityId(tenantDomain);
+            if (StringUtils.isNotBlank(residentIdpEntityId)) {
+                return residentIdpEntityId;
+            }
+        }
+
         if (IdentityTenantUtil.shouldUseTenantQualifiedURLs()) {
             try {
                 if (isMtlsRequest) {
                     return OAuthURL.getOAuth2MTLSTokenEPUrl();
-                }
-
-                if (OAuthServerConfiguration.getInstance().getIsUseEntityIDAsIssuerEnabled()) {
-                    return getResidentIdpEntityId(tenantDomain);
                 }
 
                 return ServiceURLBuilder.create().addPath(OAUTH2_TOKEN_EP_URL).setSkipDomainBranding(
@@ -6141,8 +6147,7 @@ public class OAuth2Util {
      */
     public static boolean isMtlsRequest(String requestUrl) {
 
-        return Boolean.parseBoolean(IdentityUtil.getProperty(OAuthConstants.MUTUAL_TLS_ALIASES_ENABLED))
-         && requestUrl.contains(IdentityUtil.getProperty(OAuthConstants.MTLS_HOSTNAME));
+        return requestUrl.contains(IdentityUtil.getProperty(OAuthConstants.MTLS_HOSTNAME));
     }
 
     /**
