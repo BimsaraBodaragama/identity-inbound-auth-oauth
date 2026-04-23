@@ -105,7 +105,7 @@ public class AuthorizationGrantCache extends
             }
             cacheEntry = getFromSessionStore(tokenId);
             if (cacheEntry != null) {
-                super.addToCache(key, cacheEntry);
+                super.addToCacheOnRead(key, cacheEntry);
             }
         }
         return cacheEntry;
@@ -130,7 +130,7 @@ public class AuthorizationGrantCache extends
             }
             cacheEntry = getFromSessionStore(replaceFromTokenId(key.getUserAttributesId()));
             if (cacheEntry != null) {
-                super.addToCache(key, cacheEntry);
+                super.addToCacheOnRead(key, cacheEntry);
             }
         }
         return cacheEntry;
@@ -205,7 +205,7 @@ public class AuthorizationGrantCache extends
             }
             cacheEntry = getFromSessionStore(replaceFromCodeId(key.getUserAttributesId()));
             if (cacheEntry != null) {
-                super.addToCache(key, cacheEntry);
+                super.addToCacheOnRead(key, cacheEntry);
             }
         }
         return cacheEntry;
