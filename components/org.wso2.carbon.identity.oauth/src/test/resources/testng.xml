@@ -76,6 +76,7 @@
             <class name="org.wso2.carbon.identity.oauth.config.OAuthCallbackHandlerMetaDataTest"/>
             <class name="org.wso2.carbon.identity.oauth.config.OAuthServerConfigurationTest"/>
             <class name="org.wso2.carbon.identity.oauth.dao.OAuthAppDAOTest"/>
+            <class name="org.wso2.carbon.identity.oauth2.dao.RevokedTokenDAOImplTest"/>
             <class name="org.wso2.carbon.identity.oauth.dao.OAuthConsumerDAOTest"/>
             <class name="org.wso2.carbon.identity.oauth.event.AbstractOAuthEventInterceptorTest"/>
             <class name="org.wso2.carbon.identity.oauth.listener.ClaimCacheRemoveListenerTest"/>
@@ -158,6 +159,7 @@
             <class name="org.wso2.carbon.identity.oauth.config.OAuthCallbackHandlerMetaDataTest"/>
             <class name="org.wso2.carbon.identity.oauth.config.OAuthServerConfigurationTest"/>
             <class name="org.wso2.carbon.identity.oauth.dao.OAuthAppDAOTest"/>
+            <class name="org.wso2.carbon.identity.oauth2.dao.RevokedTokenDAOImplTest"/>
             <class name="org.wso2.carbon.identity.oauth.dao.OAuthConsumerDAOTest"/>
             <class name="org.wso2.carbon.identity.oauth.event.AbstractOAuthEventInterceptorTest"/>
             <class name="org.wso2.carbon.identity.oauth.listener.ClaimCacheRemoveListenerTest"/>
