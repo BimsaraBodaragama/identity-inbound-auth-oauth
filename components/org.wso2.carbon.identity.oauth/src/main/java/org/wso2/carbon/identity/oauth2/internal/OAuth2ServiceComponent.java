@@ -58,6 +58,7 @@ import org.wso2.carbon.identity.oauth.config.OAuthServerConfiguration;
 import org.wso2.carbon.identity.oauth.dto.ScopeDTO;
 import org.wso2.carbon.identity.oauth.internal.OAuthComponentServiceHolder;
 import org.wso2.carbon.identity.oauth.rar.core.AuthorizationDetailsSchemaValidator;
+import org.wso2.carbon.identity.oauth.tokenprocessor.DefaultOAuth2RevocationProcessor;
 import org.wso2.carbon.identity.oauth.tokenprocessor.OAuth2RevocationProcessor;
 import org.wso2.carbon.identity.oauth.tokenprocessor.RefreshTokenGrantProcessor;
 import org.wso2.carbon.identity.oauth.tokenprocessor.TokenProvider;
@@ -386,6 +387,8 @@ public class OAuth2ServiceComponent {
             } else {
                 log.error("DeviceAuthService could not be registered.");
             }
+
+            OAuth2ServiceComponentHolder.getInstance().addRevocationProcessor(new DefaultOAuth2RevocationProcessor());
 
             // Register the default OpenIDConnect claim filter
             bundleContext.registerService(OpenIDConnectClaimFilter.class, new OpenIDConnectClaimFilterImpl(), null);
@@ -978,9 +981,9 @@ public class OAuth2ServiceComponent {
     protected void setOAuth2RevocationProcessor(OAuth2RevocationProcessor oAuth2RevocationProcessor) {
 
         if (log.isDebugEnabled()) {
-            log.debug("Setting Oauth2 revocation processor.");
+            log.debug("Setting Oauth2 revocation processor: " + oAuth2RevocationProcessor.getClass().getName());
         }
-        OAuth2ServiceComponentHolder.getInstance().setRevocationProcessor(oAuth2RevocationProcessor);
+        OAuth2ServiceComponentHolder.getInstance().addRevocationProcessor(oAuth2RevocationProcessor);
     }
 
     /**
@@ -991,9 +994,9 @@ public class OAuth2ServiceComponent {
     protected void unsetOAuth2RevocationProcessor(OAuth2RevocationProcessor oAuth2RevocationProcessor) {
 
         if (log.isDebugEnabled()) {
-            log.debug("Unset Oauth2 revocation processor.");
+            log.debug("Unset Oauth2 revocation processor: " + oAuth2RevocationProcessor.getClass().getName());
         }
-        OAuth2ServiceComponentHolder.getInstance().setRevocationProcessor(null);
+        OAuth2ServiceComponentHolder.getInstance().removeRevocationProcessor(oAuth2RevocationProcessor);
     }
 
     @Reference(
