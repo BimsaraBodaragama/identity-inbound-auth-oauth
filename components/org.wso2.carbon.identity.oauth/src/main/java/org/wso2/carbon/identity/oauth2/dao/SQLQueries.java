@@ -1912,7 +1912,7 @@ public class SQLQueries {
         private RefreshTokenPersistenceSQLQueries() {
         }
     }
-  
+    /**
      * Contains SQL query constants used for managing revoked access tokens and revocation events in the
      * non-persistence scenarios.
      */
