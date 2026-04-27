@@ -210,7 +210,7 @@ public class RefreshGrantHandler extends AbstractAuthorizationGrantHandler {
             }
 
             setTokenDataToMessageContext(tokReqMsgCtx, accessTokenBean);
-            addUserAttributesToCache(accessTokenBean, tokReqMsgCtx);
+            getRefreshTokenGrantProcessor().addUserAttributesToCache(accessTokenBean, tokReqMsgCtx);
         }
         return buildTokenResponse(tokReqMsgCtx, accessTokenBean);
     }
@@ -859,48 +859,6 @@ public class RefreshGrantHandler extends AbstractAuthorizationGrantHandler {
             }
         }
         return refreshTokenValidityPeriod;
-    }
-
-    private static void addUserAttributesToCache(AccessTokenDO accessTokenBean,
-                                                 OAuthTokenReqMessageContext msgCtx) {
-
-        RefreshTokenValidationDataDO oldAccessToken =
-                (RefreshTokenValidationDataDO) msgCtx.getProperty(PREV_ACCESS_TOKEN);
-        if (oldAccessToken.getAccessToken() == null) {
-            return;
-        }
-        AuthorizationGrantCacheKey oldAuthorizationGrantCacheKey = new AuthorizationGrantCacheKey(oldAccessToken
-                .getAccessToken());
-        if (log.isDebugEnabled()) {
-            log.debug("Getting AuthorizationGrantCacheEntry using access token id: " + accessTokenBean.getTokenId());
-        }
-        AuthorizationGrantCacheEntry grantCacheEntry =
-                AuthorizationGrantCache.getInstance().getValueFromCacheByTokenId(oldAuthorizationGrantCacheKey,
-                        oldAccessToken.getTokenId());
-
-        if (grantCacheEntry != null) {
-            if (log.isDebugEnabled()) {
-                log.debug("Getting user attributes cached against the previous access token with access token id: " +
-                        oldAccessToken.getTokenId());
-            }
-            AuthorizationGrantCacheKey authorizationGrantCacheKey = new AuthorizationGrantCacheKey(accessTokenBean
-                    .getAccessToken());
-
-            if (StringUtils.isNotBlank(accessTokenBean.getTokenId())) {
-                grantCacheEntry.setTokenId(accessTokenBean.getTokenId());
-            } else {
-                grantCacheEntry.setTokenId(null);
-            }
-
-            // Setting the validity period of the cache entry to be same as the validity period of the refresh token.
-            grantCacheEntry.setValidityPeriod(
-                    TimeUnit.MILLISECONDS.toNanos(accessTokenBean.getRefreshTokenValidityPeriodInMillis()));
-
-            // This new method has introduced in order to resolve a regression occurred : wso2/product-is#4366.
-            AuthorizationGrantCache.getInstance().clearCacheEntryByTokenId(oldAuthorizationGrantCacheKey,
-                    oldAccessToken.getTokenId());
-            AuthorizationGrantCache.getInstance().addToCacheByToken(authorizationGrantCacheKey, grantCacheEntry);
-        }
     }
 
     private ActionExecutionStatus<?> executePreIssueAccessTokenActions(
