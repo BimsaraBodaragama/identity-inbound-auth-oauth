@@ -351,7 +351,7 @@ public class OAuthUtilTest {
         OAuthTokenPersistenceFactory mockOAuthTokenPersistenceFactory = mock(OAuthTokenPersistenceFactory.class);
         when(OAuthTokenPersistenceFactory.getInstance()).thenReturn(mockOAuthTokenPersistenceFactory);
         AccessTokenDAO mockAccessTokenDAO = mock(AccessTokenDAO.class);
-        when(mockOAuthTokenPersistenceFactory.getAccessTokenDAO()).thenReturn(mockAccessTokenDAO);
+        when(mockOAuthTokenPersistenceFactory.getAccessTokenDAOImpl(anyString())).thenReturn(mockAccessTokenDAO);
         Set<AccessTokenDO> accessTokens = new HashSet<>();
         AccessTokenDO accessTokenDO = new AccessTokenDO();
         accessTokenDO.setAccessToken(accessToken);
@@ -430,7 +430,7 @@ public class OAuthUtilTest {
         OAuthTokenPersistenceFactory mockOAuthTokenPersistenceFactory = mock(OAuthTokenPersistenceFactory.class);
         when(OAuthTokenPersistenceFactory.getInstance()).thenReturn(mockOAuthTokenPersistenceFactory);
         AccessTokenDAO mockAccessTokenDAO = mock(AccessTokenDAO.class);
-        when(mockOAuthTokenPersistenceFactory.getAccessTokenDAO()).thenReturn(mockAccessTokenDAO);
+        when(mockOAuthTokenPersistenceFactory.getAccessTokenDAOImpl(anyString())).thenReturn(mockAccessTokenDAO);
         Set<AccessTokenDO> accessTokens = new HashSet<>();
         AccessTokenDO accessTokenDO = new AccessTokenDO();
         accessTokenDO.setAccessToken(accessToken);

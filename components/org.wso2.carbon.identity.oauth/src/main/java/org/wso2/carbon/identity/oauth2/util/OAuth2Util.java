@@ -6485,58 +6485,24 @@ public class OAuth2Util {
                 .orElse(null);
     }
 
-    /**
-     * Check if access token persistence is enabled.
-     *
-     * @return True if access token persistence is enabled.
-     */
     public static boolean isAccessTokenPersistenceEnabled() {
 
-        if (IdentityUtil.getProperty(OAuth2Constants.OAUTH_ACCESS_TOKEN_PERSISTENCE_ENABLE) != null) {
-            return Boolean.parseBoolean
-                    (IdentityUtil.getProperty(OAuth2Constants.OAUTH_ACCESS_TOKEN_PERSISTENCE_ENABLE));
-        }
-        return OAuth2Constants.DEFAULT_ACCESS_TOKEN_PERSIST_ENABLED;
+        return OAuthServerConfiguration.getInstance().isAccessTokenPersistenceEnabled();
     }
 
-    /**
-     * Check if revoked access token list is enabled.
-     *
-     * @return True if revoked access token list is enabled.
-     */
     public static boolean isKeepRevokedAccessTokenEnabled() {
 
-        if (IdentityUtil.getProperty(OAuth2Constants.OAUTH_KEEP_REVOKED_ACCESS_TOKEN_LIST) != null) {
-            return Boolean.parseBoolean
-                    (IdentityUtil.getProperty(OAuth2Constants.OAUTH_KEEP_REVOKED_ACCESS_TOKEN_LIST));
-        }
-        return OAuth2Constants.DEFAULT_KEEP_REVOKED_ACCESS_TOKEN_LIST;
+        return OAuthServerConfiguration.getInstance().isKeepRevokedTokenEnabled();
     }
 
-    /**
-     * Check if refresh token persistence is enabled.
-     *
-     * @return True if access token persistence is enabled.
-     */
     public static boolean isRefreshTokenPersistenceEnabled() {
 
-        if (IdentityUtil.getProperty(OAuth2Constants.OAUTH_REFRESH_TOKEN_PERSISTENCE_ENABLE) != null) {
-            return Boolean.parseBoolean
-                    (IdentityUtil.getProperty(OAuth2Constants.OAUTH_REFRESH_TOKEN_PERSISTENCE_ENABLE));
-        }
-        return OAuth2Constants.DEFAULT_REFRESH_TOKEN_PERSIST_ENABLED;
+        return OAuthServerConfiguration.getInstance().isRefreshTokenPersistenceEnabled();
     }
 
-    /**
-     * Check if the token type is non-persistent token type.
-     *
-     * @param consumerKey Consumer key of the application.
-     * @return True if the token type is non-persistent token type, false otherwise.
-     */
     public static boolean isNonPersistentTokenEnabled(String consumerKey) {
 
         try {
-            // Skip App DO call if token persistence is enabled (no need to check further)
             if (isAccessTokenPersistenceEnabled() || StringUtils.isBlank(consumerKey)) {
                 return false;
             }
