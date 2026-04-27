@@ -2487,7 +2487,7 @@ public class OAuthAdminServiceImpl {
      */
     public boolean isHashDisabled() {
 
-        return OAuth2Util.isHashDisabled();
+        return OAuth2Util.isClientSecretHashingDisabled();
     }
 
     AuthenticatedUser getAppOwner(OAuthConsumerAppDTO application,
