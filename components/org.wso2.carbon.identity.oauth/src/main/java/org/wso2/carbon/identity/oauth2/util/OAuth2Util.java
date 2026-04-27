@@ -6520,11 +6520,33 @@ public class OAuth2Util {
      */
     public static boolean isRefreshTokenPersistenceEnabled() {
 
-
         if (IdentityUtil.getProperty(OAuth2Constants.OAUTH_REFRESH_TOKEN_PERSISTENCE_ENABLE) != null) {
             return Boolean.parseBoolean
                     (IdentityUtil.getProperty(OAuth2Constants.OAUTH_REFRESH_TOKEN_PERSISTENCE_ENABLE));
         }
         return OAuth2Constants.DEFAULT_REFRESH_TOKEN_PERSIST_ENABLED;
+    }
+
+    /**
+     * Check if the token type is non-persistent token type.
+     *
+     * @param consumerKey Consumer key of the application.
+     * @return True if the token type is non-persistent token type, false otherwise.
+     */
+    public static boolean isNonPersistentTokenEnabled(String consumerKey) {
+
+        try {
+            // Skip App DO call if token persistence is enabled (no need to check further)
+            if (isAccessTokenPersistenceEnabled() || StringUtils.isBlank(consumerKey)) {
+                return false;
+            }
+
+            OAuthAppDO appDO = getAppInformationByClientId(consumerKey);
+            return StringUtils.equals(appDO.getTokenType(), JWT);
+
+        } catch (IdentityException e) {
+            log.error("Error while retrieving the application information for the consumer key: " + consumerKey, e);
+            return false;
+        }
     }
 }
