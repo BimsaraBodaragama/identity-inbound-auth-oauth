@@ -762,8 +762,7 @@ public class OAuth2Util {
      */
     public static boolean isClientSecretHashingEnabled() {
 
-        OAuthServerConfiguration cfg = OAuthServerConfiguration.getInstance();
-        return cfg.isClientSecretHashEnabled() || cfg.isClientSecretHashOnlyEnabled();
+        return isHashEnabled() || OAuthServerConfiguration.getInstance().isClientSecretHashOnlyEnabled();
     }
 
     /**
