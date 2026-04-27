@@ -1835,6 +1835,7 @@ public class OAuthServerConfiguration {
     }
 
     public TokenPersistenceProcessor getPersistenceProcessor() throws IdentityOAuth2Exception {
+
         if (persistenceProcessor == null) {
             synchronized (this) {
                 if (persistenceProcessor == null) {
