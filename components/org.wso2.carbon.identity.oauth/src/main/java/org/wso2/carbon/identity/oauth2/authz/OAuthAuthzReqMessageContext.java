@@ -63,6 +63,8 @@ public class OAuthAuthzReqMessageContext implements Serializable {
 
     private AuthorizationDetails requestedAuthorizationDetails;
 
+    private String tokenId;
+
     public OAuthAuthzReqMessageContext(OAuth2AuthorizeReqDTO authorizationReqDTO) {
 
         this.authorizationReqDTO = authorizationReqDTO;
@@ -272,5 +274,15 @@ public class OAuthAuthzReqMessageContext implements Serializable {
     public void setRequestedAuthorizationDetails(final AuthorizationDetails requestedAuthorizationDetails) {
 
         this.requestedAuthorizationDetails = requestedAuthorizationDetails;
+    }
+
+    public String getTokenId() {
+
+        return tokenId;
+    }
+
+    public void setTokenId(String tokenId) {
+
+        this.tokenId = tokenId;
     }
 }
