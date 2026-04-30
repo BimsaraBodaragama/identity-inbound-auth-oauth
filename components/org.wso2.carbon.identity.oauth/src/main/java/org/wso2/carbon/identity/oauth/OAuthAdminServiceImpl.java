@@ -579,8 +579,14 @@ public class OAuthAdminServiceImpl {
                             app.setCallbackUrl(consoleCallBackURL);
                         }
                     }
-                    if (StringUtils.isNotBlank(app.getCallbackUrl()) &&
-                            !app.getCallbackUrl().contains(BASE_URL_PLACEHOLDER)) {
+                    String callbackUrl = app.getCallbackUrl();
+                    boolean containsUnresolvedPlaceholder = StringUtils.isNotBlank(callbackUrl) &&
+                            callbackUrl.contains(BASE_URL_PLACEHOLDER);
+
+                    // For apps shared with sub-organizations, the callback URL may contain a base URL
+                    // placeholder that is resolved only after DB retrieval.
+                    // Avoid caching entries with unresolved placeholders on app creation.
+                    if (!containsUnresolvedPlaceholder) {
                         AppInfoCache.getInstance().addToCache(app.getOauthConsumerKey(), app, tenantDomain);
                     }
                     if (LOG.isDebugEnabled()) {
