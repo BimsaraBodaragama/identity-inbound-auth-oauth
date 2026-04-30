@@ -1570,16 +1570,15 @@ public class JWTTokenIssuer extends OauthTokenIssuerImpl {
      * </ul>
      * <p>
      * For federated users, the method attempts to retrieve the user ID from the authenticated user object.
-     * If the user ID cannot be found, it logs an error and falls back to using the username.
+     * If the user ID cannot be found, it logs a debug message and falls back to using the username.
      * <p>
      * For local users, the method similarly attempts to use the user ID, falling back to username if needed.
-     *  @param jwtClaimsSetBuilder The JWT claims set builder to which user information claims will be added.
      *
-     * @param authenticatedUser The authenticated user object containing user identity information.
+     * @param jwtClaimsSetBuilder The JWT claims set builder to which user information claims will be added.
+     * @param authenticatedUser   The authenticated user object containing user identity information.
      */
     private void addApplicationUserInfo(JWTClaimsSet.Builder jwtClaimsSetBuilder, AuthenticatedUser authenticatedUser)
             throws IdentityOAuth2Exception {
-
 
         if (authenticatedUser.isFederatedUser()) {
 
@@ -1589,8 +1588,10 @@ public class JWTTokenIssuer extends OauthTokenIssuerImpl {
                 jwtClaimsSetBuilder.claim(OAuthConstants.NonPersistenceConstants.ENTITY_TYPE,
                         OAuthConstants.NonPersistenceConstants.ENTITY_ID_TYPE_USER_ID);
             } catch (UserIdNotFoundException e) {
-                log.error("User id cannot be found for user: " +
-                        authenticatedUser.getLoggableMaskedUserId() + " Using username as ENTITY_ID.");
+                if (log.isDebugEnabled()) {
+                    log.debug("User id cannot be found for user: " +
+                            authenticatedUser.getLoggableMaskedUserId() + " Using username as ENTITY_ID.");
+                }
                 jwtClaimsSetBuilder.claim(OAuthConstants.NonPersistenceConstants.ENTITY_ID,
                         authenticatedUser.toFullQualifiedUsername());
                 jwtClaimsSetBuilder.claim(OAuthConstants.NonPersistenceConstants.ENTITY_TYPE,
@@ -1601,9 +1602,20 @@ public class JWTTokenIssuer extends OauthTokenIssuerImpl {
         }
 
         // For local users, attempt to use user ID as ENTITY_ID, falling back to username if user ID is not available.
-        jwtClaimsSetBuilder.claim(OAuthConstants.NonPersistenceConstants.ENTITY_ID,
-                authenticatedUser.toFullQualifiedUsername());
-        jwtClaimsSetBuilder.claim(OAuthConstants.NonPersistenceConstants.ENTITY_TYPE,
-                OAuthConstants.NonPersistenceConstants.ENTITY_ID_TYPE_USER_NAME);
+        try {
+            String userId = authenticatedUser.getUserId();
+            jwtClaimsSetBuilder.claim(OAuthConstants.NonPersistenceConstants.ENTITY_ID, userId);
+            jwtClaimsSetBuilder.claim(OAuthConstants.NonPersistenceConstants.ENTITY_TYPE,
+                    OAuthConstants.NonPersistenceConstants.ENTITY_ID_TYPE_USER_ID);
+        } catch (UserIdNotFoundException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("User id cannot be found for user: " +
+                        authenticatedUser.getLoggableMaskedUserId() + " Using username as ENTITY_ID.");
+            }
+            jwtClaimsSetBuilder.claim(OAuthConstants.NonPersistenceConstants.ENTITY_ID,
+                    authenticatedUser.toFullQualifiedUsername());
+            jwtClaimsSetBuilder.claim(OAuthConstants.NonPersistenceConstants.ENTITY_TYPE,
+                    OAuthConstants.NonPersistenceConstants.ENTITY_ID_TYPE_USER_NAME);
+        }
     }
 }
