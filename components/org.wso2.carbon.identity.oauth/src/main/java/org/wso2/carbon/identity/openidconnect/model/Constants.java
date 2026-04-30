@@ -52,7 +52,7 @@ public class Constants {
     public static final String SERVICE_PROVIDER_ID = "spId";
 
 
-    //JWS is consists of three parts seperated by 2 '.'s as JOSE header, JWS payload, JWS signature
+    //JWS is consists of three parts separated by 2 '.'s as JOSE header, JWS payload, JWS signature
     public static final int NUMBER_OF_PARTS_IN_JWS = 3;
     public static final int NUMBER_OF_PARTS_IN_JWE = 5;
     public static final String RS = "RS";
