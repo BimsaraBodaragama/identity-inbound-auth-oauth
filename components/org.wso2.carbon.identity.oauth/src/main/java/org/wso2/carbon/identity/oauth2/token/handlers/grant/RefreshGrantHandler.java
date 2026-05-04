@@ -177,11 +177,6 @@ public class RefreshGrantHandler extends AbstractAuthorizationGrantHandler {
             tokReqMsgCtx.setValidityPeriod(validationBean.getAccessTokenValidityInMillis());
         }
 
-        if (checkExecutePreIssueAccessTokensActions(validationBean, tokReqMsgCtx) ||
-                checkExecutePreIssueIdTokensActions(tokReqMsgCtx)) {
-            setCustomizedTokenAttributesToMessageContext(validationBean, tokReqMsgCtx);
-        }
-
         ActionExecutionStatus<?> executionStatus = executePreIssueAccessTokenActions(validationBean, tokReqMsgCtx);
 
         if (executionStatus != null && (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED ||
