@@ -70,6 +70,7 @@ import org.wso2.carbon.identity.oauth.event.OAuthEventInterceptor;
 import org.wso2.carbon.identity.oauth.internal.OAuthComponentServiceHolder;
 import org.wso2.carbon.identity.oauth.internal.util.AccessTokenEventUtil;
 import org.wso2.carbon.identity.oauth.listener.OAuthApplicationMgtListener;
+import org.wso2.carbon.identity.oauth.tokenprocessor.TokenPersistenceProcessor;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2ScopeClientException;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2ScopeException;
@@ -250,6 +251,14 @@ public class OAuthAdminServiceImpl {
                 dto = OAuthUtil.buildConsumerAppDTO(app);
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Found App :" + dto.getApplicationName() + " for consumerKey: " + consumerKey);
+                }
+                if (OAuth2Util.isClientSecretHashingEnabled()) {
+                    TokenPersistenceProcessor persistenceProcessor = OAuth2Util.getClientSecretPersistenceProcessor();
+                    if (persistenceProcessor != null) {
+                        if (!persistenceProcessor.isProcessed(app.getOauthConsumerSecret())) {
+                            AppInfoCache.getInstance().clearCacheEntry(consumerKey, tenantDomain);
+                        }
+                    }
                 }
             } else {
                 dto = new OAuthConsumerAppDTO();
