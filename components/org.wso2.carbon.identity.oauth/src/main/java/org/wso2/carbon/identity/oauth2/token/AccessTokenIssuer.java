@@ -222,7 +222,7 @@ public class AccessTokenIssuer {
 
         if (isDeviceCodeRequest) {
             AuthorizationGrantCacheEntry authorizationGrantCacheEntry =
-                    getAuthzGrantCacheEntryFromDeviceCode(tokenReqDTO);
+                    getAuthzGrantCacheEntryFromDeviceCode(tokenReqDTO, tokReqMsgCtx);
             persistImpersonationInfoToTokenReqCtx(authorizationGrantCacheEntry, tokReqMsgCtx);
         }
 
@@ -413,13 +413,14 @@ public class AccessTokenIssuer {
         return tokenRespDTO;
     }
 
-    private AuthorizationGrantCacheEntry getAuthzGrantCacheEntryFromDeviceCode(OAuth2AccessTokenReqDTO tokenReqDTO) {
+    private AuthorizationGrantCacheEntry getAuthzGrantCacheEntryFromDeviceCode(OAuth2AccessTokenReqDTO tokenReqDTO,
+                                                                               OAuthTokenReqMessageContext tokReqMsgCtx) {
 
         Optional<String> deviceCodeOptional = getDeviceCode(tokenReqDTO);
         if (deviceCodeOptional.isPresent()) {
             String deviceCode = deviceCodeOptional.get();
             Optional<AuthorizationGrantCacheEntry> authorizationGrantCacheEntryOptional
-                    = getAuthzGrantCacheEntryFromDeviceCode(deviceCode);
+                    = getAuthzGrantCacheEntryFromDeviceCode(deviceCode, tokReqMsgCtx);
             return authorizationGrantCacheEntryOptional.orElse(null);
         }
         return null;
@@ -695,7 +696,7 @@ public class AccessTokenIssuer {
             Optional<String> deviceCodeOptional = getDeviceCode(tokenReqDTO);
             if (deviceCodeOptional.isPresent()) {
                 String deviceCode = deviceCodeOptional.get();
-                authorizationGrantCacheEntry = getAuthzGrantCacheEntryFromDeviceCode(deviceCode);
+                authorizationGrantCacheEntry = getAuthzGrantCacheEntryFromDeviceCode(deviceCode, tokReqMsgCtx);
                 // Cache entry against the device code has no value beyond the token request.
                 clearCacheEntryAgainstDeviceCode(deviceCode);
             }
@@ -799,7 +800,8 @@ public class AccessTokenIssuer {
         return tenantDomain;
     }
 
-    private Optional<AuthorizationGrantCacheEntry> getAuthzGrantCacheEntryFromDeviceCode(String deviceCode) {
+    private Optional<AuthorizationGrantCacheEntry> getAuthzGrantCacheEntryFromDeviceCode(
+            String deviceCode, OAuthTokenReqMessageContext tokReqMsgCtx) {
 
         DeviceAuthorizationGrantCacheKey deviceCodeCacheKey =
                 new DeviceAuthorizationGrantCacheKey(deviceCode);
@@ -809,6 +811,7 @@ public class AccessTokenIssuer {
             Map<ClaimMapping, String> userAttributes = cacheEntry.getUserAttributes();
             AuthorizationGrantCacheEntry authorizationGrantCacheEntry =
                     new AuthorizationGrantCacheEntry(userAttributes);
+            authorizationGrantCacheEntry.setAuthenticatedUser(new AuthenticatedUser(tokReqMsgCtx.getAuthorizedUser()));
             if (cacheEntry.getMappedRemoteClaims() != null) {
                 authorizationGrantCacheEntry.setMappedRemoteClaims(cacheEntry
                         .getMappedRemoteClaims());
