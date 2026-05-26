@@ -38,7 +38,6 @@ import static org.wso2.carbon.identity.application.authentication.framework.opti
 import static org.wso2.carbon.identity.application.authentication.framework.optimizer.SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue;
 import static org.wso2.carbon.identity.application.authentication.framework.optimizer.SessionDataOptimizerUtil.getUserClaimURIsArray;
 import static org.wso2.carbon.identity.application.authentication.framework.optimizer.SessionDataOptimizerUtil.getUserClaimValues;
-import static org.wso2.carbon.identity.application.authentication.framework.optimizer.SessionDataOptimizerUtil.logSessionDataIntoConsole;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils.buildClaimMappings;
 
 /**
@@ -79,7 +78,6 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
                         "AuthorizationGrantCacheEntry with key: " + key);
             }
             optimizeLocalUserAttributes(authorizationGrantCacheEntry, key);
-            // resetLocalUserAttributes(authorizationGrantCacheEntry, key);
         }
 
         // logSessionDataIntoConsole(authorizationGrantCacheEntry);
@@ -157,6 +155,13 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
         }
 
         AuthenticatedUser authenticatedUser = entry.getAuthenticatedUser();
+        if (authenticatedUser == null) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("No authenticated user found in AuthorizationGrantCacheEntry with key: " + keyId +
+                        ". Skipping restoration of local user attributes.");
+            }
+            return;
+        }
         if (authenticatedUser.isFederatedUser()) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Federated user found in AuthorizationGrantCacheEntry with key: " + keyId +
@@ -179,8 +184,7 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
         }));
         addMultiAttributeSeparatorToUserClaims(authenticatedUser, userAttributesMap);
 
-        String[] claimsToResolve = entry.getUserAttributesList() != null
-                ? entry.getUserAttributesList() : new String[0];
+        String[] claimsToResolve = entry.getUserAttributesList();
         if (claimsToResolve.length == 0) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("No user attributes to restore for authorization grant cache entry with key: " + keyId);
@@ -202,9 +206,9 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
             return;
         }
 
-        Map<String, String> carbonToStandardClaimMapping;
+        Map<String, String> oidcToCarbonClaimMapping;
         try {
-            carbonToStandardClaimMapping = ClaimMetadataHandler.getInstance()
+            oidcToCarbonClaimMapping = ClaimMetadataHandler.getInstance()
                     .getMappingsMapFromOtherDialectToCarbon(OIDC_DIALECT, claimsToResolveSet,
                             authenticatedUser.getTenantDomain(), false);
         } catch (ClaimMetadataException e) {
@@ -216,7 +220,7 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
             return;
         }
 
-        if (carbonToStandardClaimMapping.isEmpty()) {
+        if (oidcToCarbonClaimMapping.isEmpty()) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("No claim mappings found for OIDC dialect. User claims will not be applied to user " +
                         "claims in AuthorizationGrantCacheEntry with key: " + keyId);
@@ -231,10 +235,10 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
         }
 
         Map<String, String> userClaimsFromUserStore =
-                getUserClaimValues(authenticatedUser, carbonToStandardClaimMapping.values().toArray(new String[0]));
+                getUserClaimValues(authenticatedUser, oidcToCarbonClaimMapping.values().toArray(new String[0]));
 
         for (String claimUri : claimsToResolveSet) {
-            String localDialectClaimUri = carbonToStandardClaimMapping.get(claimUri);
+            String localDialectClaimUri = oidcToCarbonClaimMapping.get(claimUri);
             if (StringUtils.isEmpty(localDialectClaimUri)) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("No local claim mapping found for claim URI: " + claimUri + ". Skipping this claim.");
