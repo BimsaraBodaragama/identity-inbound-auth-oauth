@@ -21,7 +21,6 @@ package org.wso2.carbon.identity.oauth.cache;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -343,7 +342,7 @@ public class AuthorizationGrantCache extends
      */
     public void clearFromSessionStoreBatch(List<String> ids) {
 
-        if (CollectionUtils.isEmpty(ids)) {
+        if (ids == null || ids.isEmpty()) {
             return;
         }
         SessionDataStore.getInstance().clearSessionDataBatch(ids, AUTHORIZATION_GRANT_CACHE_NAME);
