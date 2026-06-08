@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.application.authentication.framework.exception.session.optimizer.SessionDataOptimizationV2Exception;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authentication.framework.optimizer.AbstractSessionDataOptimizer;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataHandler;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
@@ -44,7 +43,7 @@ import static org.wso2.carbon.identity.application.authentication.framework.util
  * This class optimizes the Authorization grant data before storing it in the database and loads it back
  * to the original form when retrieving from the database.
  */
-public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimizer {
+public class AuthorizationGrantDataOptimizer implements SessionDataOptimizer {
 
     public static final String AUTHORIZATION_GRANT_OPTIMIZATION_ENABLED
             = "SessionDataOptimizationV2.AuthorizationGrant.Enable";
@@ -67,7 +66,7 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
     }
 
     @Override
-    public Object optimizeSessionData(String key, Object entry) throws SessionDataOptimizationV2Exception {
+    public Object optimize(String key, Object entry) throws SessionDataOptimizationV2Exception {
 
         AuthorizationGrantCacheEntry authorizationGrantCacheEntry =
                 new AuthorizationGrantCacheEntry((AuthorizationGrantCacheEntry) entry);
@@ -80,12 +79,11 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
             optimizeLocalUserAttributes(authorizationGrantCacheEntry, key);
         }
 
-        // logSessionDataIntoConsole(authorizationGrantCacheEntry);
         return authorizationGrantCacheEntry;
     }
 
     @Override
-    public Object loadSessionData(String key, Object entry) throws SessionDataOptimizationV2Exception {
+    public Object load(String key, Object entry) throws SessionDataOptimizationV2Exception {
 
         AuthorizationGrantCacheEntry authorizationGrantCacheEntry = (AuthorizationGrantCacheEntry) entry;
 
@@ -94,9 +92,8 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
                 LOG.debug("Local user attribute optimization is enabled. Restoring local user attributes in " +
                         "AuthorizationGrantCacheEntry with key: " + key);
             }
-            resetLocalUserAttributes(authorizationGrantCacheEntry, key);
+            rebuildLocalUserAttributes(authorizationGrantCacheEntry, key);
         }
-        // logSessionDataIntoConsole(authorizationGrantCacheEntry);
         return authorizationGrantCacheEntry;
     }
 
@@ -138,7 +135,7 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
         }
     }
 
-    private void resetLocalUserAttributes(AuthorizationGrantCacheEntry entry, String keyId)
+    private void rebuildLocalUserAttributes(AuthorizationGrantCacheEntry entry, String keyId)
             throws SessionDataOptimizationV2Exception {
 
         if (entry.getUserAttributesList() != null) {
@@ -189,7 +186,7 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
             if (LOG.isDebugEnabled()) {
                 LOG.debug("No user attributes to restore for authorization grant cache entry with key: " + keyId);
             }
-            concludeLocalAttributeOptimizationReset(entry, userAttributesMap, runtimeClaimURIs);
+            concludeRebuildingLocalAttributes(entry, userAttributesMap, runtimeClaimURIs);
             return;
         }
 
@@ -202,7 +199,7 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
                         + keyId + " are already present in the user attributes map. No need to retrieve " +
                         "from user store.");
             }
-            concludeLocalAttributeOptimizationReset(entry, userAttributesMap, runtimeClaimURIs);
+            concludeRebuildingLocalAttributes(entry, userAttributesMap, runtimeClaimURIs);
             return;
         }
 
@@ -216,7 +213,7 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
                 LOG.debug("Error while retrieving claim mappings for OIDC dialect. User claims will not be " +
                         "applied to user claims in AuthorizationGrantCacheEntry with key: " + keyId, e);
             }
-            concludeLocalAttributeOptimizationReset(entry, userAttributesMap, runtimeClaimURIs);
+            concludeRebuildingLocalAttributes(entry, userAttributesMap, runtimeClaimURIs);
             return;
         }
 
@@ -225,12 +222,12 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
                 LOG.debug("No claim mappings found for OIDC dialect. User claims will not be applied to user " +
                         "claims in AuthorizationGrantCacheEntry with key: " + keyId);
             }
-            concludeLocalAttributeOptimizationReset(entry, userAttributesMap, runtimeClaimURIs);
+            concludeRebuildingLocalAttributes(entry, userAttributesMap, runtimeClaimURIs);
             return;
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Continue resetting local user attributes from the user store for authorization grant " +
+            LOG.debug("Continue rebuilding local user attributes from the user store for authorization grant " +
                     "cache entry with key: " + keyId);
         }
 
@@ -250,20 +247,20 @@ public class AuthorizationGrantDataOptimizer extends AbstractSessionDataOptimize
         }
 
         if  (LOG.isDebugEnabled()) {
-            LOG.debug("Completed retrieving local user attributes from the user store. Concluding the reset " +
+            LOG.debug("Completed retrieving local user attributes from the user store. Concluding the rebuilding " +
                     "of local user attributes for authorization grant cache entry with key: " + keyId);
         }
 
-        concludeLocalAttributeOptimizationReset(entry, userAttributesMap, runtimeClaimURIs);
+        concludeRebuildingLocalAttributes(entry, userAttributesMap, runtimeClaimURIs);
 
         if  (LOG.isDebugEnabled()) {
             LOG.debug("Restored local user attributes for authorization grant cache entry with key: " + keyId);
         }
     }
 
-    private void concludeLocalAttributeOptimizationReset(AuthorizationGrantCacheEntry entry,
-                                                         Map<String, String> userAttributesMap,
-                                                         Set<String> runtimeClaimURIs) {
+    private void concludeRebuildingLocalAttributes(AuthorizationGrantCacheEntry entry,
+                                                   Map<String, String> userAttributesMap,
+                                                   Set<String> runtimeClaimURIs) {
 
         Map<ClaimMapping, String> finalClaimMappings = buildClaimMappings(userAttributesMap);
         finalClaimMappings.forEach((claimMapping, value) -> {

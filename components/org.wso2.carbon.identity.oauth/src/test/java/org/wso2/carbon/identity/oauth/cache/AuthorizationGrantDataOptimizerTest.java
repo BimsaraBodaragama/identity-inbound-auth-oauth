@@ -116,7 +116,7 @@ public class AuthorizationGrantDataOptimizerTest {
     // ===== optimizeSessionData =====
 
     @Test
-    public void testOptimizeSessionData_WhenLocalAttrOptimizationDisabled()
+    public void testOptimize_WhenLocalAttrOptimizationDisabled()
             throws SessionDataOptimizationV2Exception {
 
         Map<ClaimMapping, String> userAttributes = buildUserAttributes(false);
@@ -128,7 +128,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(false);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.optimizeSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.optimize(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList(),
                     "userAttributesList should not be set when local attr optimization is disabled");
@@ -139,7 +139,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testOptimizeSessionData_WhenNoAuthenticatedUser() throws SessionDataOptimizationV2Exception {
+    public void testOptimize_WhenNoAuthenticatedUser() throws SessionDataOptimizationV2Exception {
         AuthorizationGrantCacheEntry entry = new AuthorizationGrantCacheEntry(buildUserAttributes(false));
         // No authenticated user set on entry
 
@@ -148,7 +148,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.optimizeSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.optimize(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList(),
                     "userAttributesList should not be set when authenticated user is null");
@@ -157,7 +157,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testOptimizeSessionData_WhenFederatedUser() throws SessionDataOptimizationV2Exception {
+    public void testOptimize_WhenFederatedUser() throws SessionDataOptimizationV2Exception {
         Map<ClaimMapping, String> userAttributes = buildUserAttributes(false);
         AuthorizationGrantCacheEntry entry = buildEntry(userAttributes, mockAuthenticatedUser);
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(true);
@@ -167,7 +167,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.optimizeSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.optimize(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList(),
                     "userAttributesList should not be set for federated users");
@@ -176,7 +176,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testOptimizeSessionData_WhenLocalUserWithAttributes() throws SessionDataOptimizationV2Exception {
+    public void testOptimize_WhenLocalUserWithAttributes() throws SessionDataOptimizationV2Exception {
         // One normal claim + one runtime claim
         Map<ClaimMapping, String> userAttributes = buildUserAttributes(true);
         AuthorizationGrantCacheEntry entry = buildEntry(userAttributes, mockAuthenticatedUser);
@@ -197,7 +197,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     .thenReturn(filteredAttributes);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.optimizeSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.optimize(TEST_KEY, entry);
 
             assertNotNull(result.getUserAttributesList());
             assertEquals(result.getUserAttributesList(), expectedClaimURIs);
@@ -207,7 +207,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testOptimizeSessionData_WhenLocalUserWithEmptyAttributes() throws SessionDataOptimizationV2Exception {
+    public void testOptimize_WhenLocalUserWithEmptyAttributes() throws SessionDataOptimizationV2Exception {
         AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
 
@@ -220,7 +220,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     .thenReturn(new HashMap<>());
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.optimizeSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.optimize(TEST_KEY, entry);
 
             assertNotNull(result.getUserAttributesList());
             assertEquals(result.getUserAttributesList().length, 0);
@@ -229,7 +229,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testOptimizeSessionData_DoesNotModifyOriginalEntry() throws SessionDataOptimizationV2Exception {
+    public void testOptimize_DoesNotModifyOriginalEntry() throws SessionDataOptimizationV2Exception {
         Map<ClaimMapping, String> userAttributes = buildUserAttributes(false);
         AuthorizationGrantCacheEntry originalEntry = buildEntry(userAttributes, mockAuthenticatedUser);
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
@@ -242,7 +242,7 @@ public class AuthorizationGrantDataOptimizerTest {
             mockedUtil.when(() -> SessionDataOptimizerUtil.filterRuntimeClaims(any()))
                     .thenReturn(new HashMap<>());
 
-            optimizer.optimizeSessionData(TEST_KEY, originalEntry);
+            optimizer.optimize(TEST_KEY, originalEntry);
 
             // The optimizer creates a copy; the original entry must not be mutated
             assertNull(originalEntry.getUserAttributesList(),
@@ -255,7 +255,7 @@ public class AuthorizationGrantDataOptimizerTest {
     // ===== loadSessionData =====
 
     @Test
-    public void testLoadSessionData_WhenLocalAttrOptimizationDisabled() throws SessionDataOptimizationV2Exception {
+    public void testLoad_WhenLocalAttrOptimizationDisabled() throws SessionDataOptimizationV2Exception {
         AuthorizationGrantCacheEntry entry = new AuthorizationGrantCacheEntry();
         entry.setUserAttributes(buildUserAttributes(false));
         entry.setUserAttributesList(new String[]{LOCAL_CLAIM_URI});
@@ -265,7 +265,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(false);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNotNull(result.getUserAttributesList(),
                     "userAttributesList should remain unchanged when optimization is disabled");
@@ -275,7 +275,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testLoadSessionData_WhenUserAttributesListIsNull() throws SessionDataOptimizationV2Exception {
+    public void testLoad_WhenUserAttributesListIsNull() throws SessionDataOptimizationV2Exception {
         AuthorizationGrantCacheEntry entry = buildEntry(buildUserAttributes(false), mockAuthenticatedUser);
         // userAttributesList is null by default — indicates entry was not optimized
 
@@ -284,7 +284,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList());
             mockedUtil.verify(
@@ -293,7 +293,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testLoadSessionData_WhenNoAuthenticatedUser() throws SessionDataOptimizationV2Exception {
+    public void testLoad_WhenNoAuthenticatedUser() throws SessionDataOptimizationV2Exception {
         AuthorizationGrantCacheEntry entry = new AuthorizationGrantCacheEntry();
         entry.setUserAttributes(buildUserAttributes(false));
         entry.setUserAttributesList(new String[]{LOCAL_CLAIM_URI});
@@ -304,7 +304,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNotNull(result.getUserAttributesList(),
                     "userAttributesList should remain set when authenticated user is absent");
@@ -314,7 +314,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testLoadSessionData_WhenFederatedUser() throws SessionDataOptimizationV2Exception {
+    public void testLoad_WhenFederatedUser() throws SessionDataOptimizationV2Exception {
         Map<ClaimMapping, String> userAttributes = buildUserAttributes(false);
         AuthorizationGrantCacheEntry entry = buildEntry(userAttributes, mockAuthenticatedUser);
         entry.setUserAttributesList(new String[]{LOCAL_CLAIM_URI});
@@ -325,7 +325,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNotNull(result.getUserAttributesList(),
                     "userAttributesList should remain set for federated users");
@@ -335,7 +335,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testLoadSessionData_WhenEmptyUserAttributesList() throws SessionDataOptimizationV2Exception {
+    public void testLoad_WhenEmptyUserAttributesList() throws SessionDataOptimizationV2Exception {
         // userAttributesList is empty: all non-runtime claims were removed but none need to be re-fetched
         Map<ClaimMapping, String> userAttributes = buildUserAttributes(false);
         AuthorizationGrantCacheEntry entry = buildEntry(userAttributes, mockAuthenticatedUser);
@@ -357,7 +357,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     .thenReturn(rebuiltAttributes);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList(),
                     "userAttributesList should be null after a successful reset");
@@ -367,7 +367,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testLoadSessionData_WhenAllClaimsAlreadyPresent() throws SessionDataOptimizationV2Exception {
+    public void testLoad_WhenAllClaimsAlreadyPresent() throws SessionDataOptimizationV2Exception {
         // userAttributesList names a claim that is already present in userAttributes —
         // no OIDC lookup or user store call should be made
         ClaimMapping existingMapping = ClaimMapping.build(LOCAL_CLAIM_URI, LOCAL_CLAIM_URI, null, false);
@@ -394,7 +394,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     .thenReturn(rebuiltAttributes);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList());
             // No OIDC dialect lookup needed when all claims are already present
@@ -403,7 +403,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testLoadSessionData_WhenClaimMetadataExceptionOccurs() throws Exception {
+    public void testLoad_WhenClaimMetadataExceptionOccurs() throws Exception {
         // OIDC claim present in userAttributesList but absent from userAttributes;
         // ClaimMetadataHandler throws — the optimizer must fall back gracefully
         AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
@@ -427,7 +427,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     .thenReturn(new HashMap<>());
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList(),
                     "userAttributesList should be cleared even when ClaimMetadataException occurs");
@@ -436,7 +436,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testLoadSessionData_WhenOIDCMappingIsEmpty() throws Exception {
+    public void testLoad_WhenOIDCMappingIsEmpty() throws Exception {
         // OIDC claim present in userAttributesList but ClaimMetadataHandler returns an empty mapping
         AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
         entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI});
@@ -459,7 +459,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     .thenReturn(new HashMap<>());
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList());
             mockedUtil.verify(() -> SessionDataOptimizerUtil.getUserClaimValues(any(), any()), never());
@@ -467,7 +467,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testLoadSessionData_WhenClaimsResolvedFromUserStore() throws Exception {
+    public void testLoad_WhenClaimsResolvedFromUserStore() throws Exception {
         // Missing OIDC claim is resolved through ClaimMetadataHandler and then fetched from the user store
         AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
         entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI});
@@ -503,7 +503,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     .thenReturn(rebuiltAttributes);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList());
             assertEquals(result.getUserAttributes(), rebuiltAttributes);
@@ -513,7 +513,7 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
-    public void testLoadSessionData_WhenSomeClaimsHaveNoLocalMapping() throws Exception {
+    public void testLoad_WhenSomeClaimsHaveNoLocalMapping() throws Exception {
         // OIDC claim is in claimsToResolveSet but its mapped local claim URI is blank — it must be silently skipped
         String unmappedOidcClaimUri = "http://wso2.org/oidc/claim/unmapped";
         AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
@@ -544,14 +544,14 @@ public class AuthorizationGrantDataOptimizerTest {
 
             // Must complete without exception; the unmapped claim is just skipped
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList());
         }
     }
 
     @Test
-    public void testLoadSessionData_RuntimeClaimsRestoredCorrectly() throws SessionDataOptimizationV2Exception {
+    public void testLoad_RuntimeClaimsRestoredCorrectly() throws SessionDataOptimizationV2Exception {
         // A runtime claim surviving in userAttributes must have isRuntimeValue re-applied after
         // concludeLocalAttributeOptimizationReset rebuilds the claim mappings via buildClaimMappings
         ClaimMapping runtimeMapping = ClaimMapping.build(RUNTIME_CLAIM_URI, RUNTIME_CLAIM_URI, null, false);
@@ -579,7 +579,7 @@ public class AuthorizationGrantDataOptimizerTest {
                     .thenReturn(rebuiltAttributes);
 
             AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.loadSessionData(TEST_KEY, entry);
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
             assertNull(result.getUserAttributesList());
             result.getUserAttributes().forEach((claimMapping, value) -> {
