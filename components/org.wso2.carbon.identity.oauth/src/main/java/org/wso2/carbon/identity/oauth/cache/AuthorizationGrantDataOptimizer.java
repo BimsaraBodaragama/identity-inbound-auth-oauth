@@ -48,7 +48,7 @@ public class AuthorizationGrantDataOptimizer implements SessionDataOptimizer {
             = "SessionDataOptimizationV2.AuthorizationGrant.OptimizeLocalUserAttributes";
     private static final String OIDC_DIALECT = "http://wso2.org/oidc/claim";
 
-    public static final Log LOG = LogFactory.getLog(AuthorizationGrantDataOptimizer.class);
+    private static final Log LOG = LogFactory.getLog(AuthorizationGrantDataOptimizer.class);
 
     @Override
     public String getCacheName() {
@@ -69,14 +69,15 @@ public class AuthorizationGrantDataOptimizer implements SessionDataOptimizer {
         AuthorizationGrantCacheEntry authorizationGrantCacheEntry =
                 new AuthorizationGrantCacheEntry((AuthorizationGrantCacheEntry) entry);
 
-        if (isLocalUserAttributeOptimizationEnabled()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Local user attribute optimization is enabled. Optimizing local user attributes in " +
-                        "AuthorizationGrantCacheEntry with key: " + key);
-            }
-            optimizeLocalUserAttributes(authorizationGrantCacheEntry, key);
+        if (!isLocalUserAttributeOptimizationEnabled()) {
+            return authorizationGrantCacheEntry;
         }
 
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Local user attribute optimization is enabled. Optimizing local user attributes in " +
+                    "AuthorizationGrantCacheEntry with key: " + key);
+        }
+        optimizeLocalUserAttributes(authorizationGrantCacheEntry, key);
         return authorizationGrantCacheEntry;
     }
 
@@ -85,13 +86,15 @@ public class AuthorizationGrantDataOptimizer implements SessionDataOptimizer {
 
         AuthorizationGrantCacheEntry authorizationGrantCacheEntry = (AuthorizationGrantCacheEntry) entry;
 
-        if (isLocalUserAttributeOptimizationEnabled()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Local user attribute optimization is enabled. Restoring local user attributes in " +
-                        "AuthorizationGrantCacheEntry with key: " + key);
-            }
-            rebuildLocalUserAttributes(authorizationGrantCacheEntry, key);
+        if (!isLocalUserAttributeOptimizationEnabled()) {
+            return authorizationGrantCacheEntry;
         }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Local user attribute optimization is enabled. Restoring local user attributes in " +
+                    "AuthorizationGrantCacheEntry with key: " + key);
+        }
+        rebuildLocalUserAttributes(authorizationGrantCacheEntry, key);
         return authorizationGrantCacheEntry;
     }
 
@@ -154,18 +157,14 @@ public class AuthorizationGrantDataOptimizer implements SessionDataOptimizer {
 
         AuthenticatedUser authenticatedUser = entry.getAuthenticatedUser();
         if (authenticatedUser == null) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("No authenticated user found in AuthorizationGrantCacheEntry with key: " + keyId +
-                        ". Skipping restoration of local user attributes.");
-            }
-            return;
+            throw new SessionDataOptimizationV2Exception(
+                    "No authenticated user found in AuthorizationGrantCacheEntry even though optimization metadata " +
+                            "exists for authorization grant cache entry with key: " + keyId);
         }
         if (authenticatedUser.isFederatedUser()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Federated user found in AuthorizationGrantCacheEntry with key: " + keyId +
-                        ". Skipping restoration of local user attributes.");
-            }
-            return;
+            throw new SessionDataOptimizationV2Exception(
+                    "Authenticated user is a federated user even though local user attribute optimization was " +
+                            "applied for authorization grant cache entry with key: " + keyId);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -216,12 +215,9 @@ public class AuthorizationGrantDataOptimizer implements SessionDataOptimizer {
         }
 
         if (oidcToCarbonClaimMapping.isEmpty()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("No claim mappings found for OIDC dialect. User claims will not be applied to user " +
-                        "claims in AuthorizationGrantCacheEntry with key: " + keyId);
-            }
-            setUserAttributesToAuthorizationGrantCacheEntry(entry, userAttributesMap, runtimeClaimURIs);
-            return;
+            throw new SessionDataOptimizationV2Exception(
+                    "No OIDC dialect claim mappings found even though claims remain to be rebuilt " +
+                            "for authorization grant cache entry with key: " + keyId);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -249,7 +245,7 @@ public class AuthorizationGrantDataOptimizer implements SessionDataOptimizer {
             }
             String claimValue = userClaimsFromUserStore.get(localDialectClaimUri);
             if  (StringUtils.isNotEmpty(claimValue)) {
-                resolvedClaims.add(claimValue);
+                resolvedClaims.add(claimUri);
                 userAttributesMap.put(claimUri, claimValue);
             }
         }

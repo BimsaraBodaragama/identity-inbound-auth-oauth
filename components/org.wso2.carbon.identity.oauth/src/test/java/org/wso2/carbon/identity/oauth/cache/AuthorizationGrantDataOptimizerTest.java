@@ -60,9 +60,12 @@ public class AuthorizationGrantDataOptimizerTest {
     private static final String TEST_KEY = "test-auth-grant-key";
     private static final String TENANT_DOMAIN = "carbon.super";
     private static final String LOCAL_CLAIM_URI = "http://wso2.org/claims/emailaddress";
+    private static final String LOCAL_CLAIM_URI_2 = "http://wso2.org/claims/givenname";
     private static final String OIDC_CLAIM_URI = "http://wso2.org/oidc/claim/email";
+    private static final String OIDC_CLAIM_URI_2 = "http://wso2.org/oidc/claim/given_name";
     private static final String RUNTIME_CLAIM_URI = "http://wso2.org/claims/runtime";
     private static final String CLAIM_VALUE = "test@example.com";
+    private static final String CLAIM_VALUE_2 = "John";
     private static final String RUNTIME_CLAIM_VALUE = "runtimeValue";
 
     private AuthorizationGrantDataOptimizer optimizer;
@@ -98,7 +101,7 @@ public class AuthorizationGrantDataOptimizerTest {
     @Test
     public void testIsOptimizationEnabled_WhenEnabled() {
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     AUTHORIZATION_GRANT_OPTIMIZATION_ENABLED)).thenReturn(true);
             assertTrue(optimizer.isOptimizationEnabled());
         }
@@ -107,7 +110,7 @@ public class AuthorizationGrantDataOptimizerTest {
     @Test
     public void testIsOptimizationEnabled_WhenDisabled() {
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     AUTHORIZATION_GRANT_OPTIMIZATION_ENABLED)).thenReturn(false);
             assertFalse(optimizer.isOptimizationEnabled());
         }
@@ -124,7 +127,7 @@ public class AuthorizationGrantDataOptimizerTest {
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(false);
 
             AuthorizationGrantCacheEntry result =
@@ -144,7 +147,7 @@ public class AuthorizationGrantDataOptimizerTest {
         // No authenticated user set on entry
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
             AuthorizationGrantCacheEntry result =
@@ -163,7 +166,7 @@ public class AuthorizationGrantDataOptimizerTest {
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(true);
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
             AuthorizationGrantCacheEntry result =
@@ -189,7 +192,7 @@ public class AuthorizationGrantDataOptimizerTest {
         filteredAttributes.put(runtimeMapping, RUNTIME_CLAIM_VALUE);
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
             mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimURIsArray(any()))
                     .thenReturn(expectedClaimURIs);
@@ -208,23 +211,22 @@ public class AuthorizationGrantDataOptimizerTest {
 
     @Test
     public void testOptimize_WhenLocalUserWithEmptyAttributes() throws SessionDataOptimizationV2Exception {
+        // Empty userAttributes — optimization is skipped entirely
         AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimURIsArray(any()))
-                    .thenReturn(new String[0]);
-            mockedUtil.when(() -> SessionDataOptimizerUtil.filterRuntimeClaims(any()))
-                    .thenReturn(new HashMap<>());
 
             AuthorizationGrantCacheEntry result =
                     (AuthorizationGrantCacheEntry) optimizer.optimize(TEST_KEY, entry);
 
-            assertNotNull(result.getUserAttributesList());
-            assertEquals(result.getUserAttributesList().length, 0);
+            assertNull(result.getUserAttributesList(),
+                    "userAttributesList should not be set when userAttributes is empty");
             assertTrue(result.getUserAttributes().isEmpty());
+            mockedUtil.verify(() -> SessionDataOptimizerUtil.getUserClaimURIsArray(any()), never());
+            mockedUtil.verify(() -> SessionDataOptimizerUtil.filterRuntimeClaims(any()), never());
         }
     }
 
@@ -235,7 +237,7 @@ public class AuthorizationGrantDataOptimizerTest {
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
             mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimURIsArray(any()))
                     .thenReturn(new String[]{LOCAL_CLAIM_URI});
@@ -252,6 +254,69 @@ public class AuthorizationGrantDataOptimizerTest {
         }
     }
 
+    @Test
+    public void testOptimize_WhenAllClaimsAreRuntimeClaims() throws SessionDataOptimizationV2Exception {
+        // All user attributes are runtime claims — getUserClaimURIsArray returns [] (nothing to re-fetch),
+        // filterRuntimeClaims keeps them all. userAttributesList should be set to an empty array.
+        ClaimMapping runtimeMapping = ClaimMapping.build(RUNTIME_CLAIM_URI, RUNTIME_CLAIM_URI, null, false);
+        runtimeMapping.setIsRuntimeValue(true);
+        Map<ClaimMapping, String> userAttributes = new HashMap<>();
+        userAttributes.put(runtimeMapping, RUNTIME_CLAIM_VALUE);
+
+        AuthorizationGrantCacheEntry entry = buildEntry(userAttributes, mockAuthenticatedUser);
+        when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
+
+        Map<ClaimMapping, String> filteredAttributes = new HashMap<>(userAttributes);
+
+        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
+                    LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimURIsArray(any()))
+                    .thenReturn(new String[0]);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.filterRuntimeClaims(any()))
+                    .thenReturn(filteredAttributes);
+
+            AuthorizationGrantCacheEntry result =
+                    (AuthorizationGrantCacheEntry) optimizer.optimize(TEST_KEY, entry);
+
+            assertNotNull(result.getUserAttributesList(),
+                    "userAttributesList should be set (empty array) to signal optimization ran");
+            assertEquals(result.getUserAttributesList().length, 0,
+                    "userAttributesList should be empty when all claims are runtime");
+            assertEquals(result.getUserAttributes(), filteredAttributes,
+                    "All runtime claims should remain in userAttributes");
+        }
+    }
+
+    @Test
+    public void testOptimize_WhenLocalUserWithOnlyNonRuntimeClaims() throws SessionDataOptimizationV2Exception {
+        // Only non-runtime claims — filterRuntimeClaims strips them all, leaving an empty userAttributes.
+        // userAttributesList should hold all the claim URIs for later re-fetch.
+        Map<ClaimMapping, String> userAttributes = buildUserAttributes(false);
+        AuthorizationGrantCacheEntry entry = buildEntry(userAttributes, mockAuthenticatedUser);
+        when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
+
+        String[] expectedClaimURIs = {LOCAL_CLAIM_URI};
+
+        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
+                    LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimURIsArray(any()))
+                    .thenReturn(expectedClaimURIs);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.filterRuntimeClaims(any()))
+                    .thenReturn(new HashMap<>());
+
+            AuthorizationGrantCacheEntry result =
+                    (AuthorizationGrantCacheEntry) optimizer.optimize(TEST_KEY, entry);
+
+            assertNotNull(result.getUserAttributesList());
+            assertEquals(result.getUserAttributesList(), expectedClaimURIs,
+                    "All non-runtime claim URIs should be stored for re-fetch");
+            assertTrue(result.getUserAttributes().isEmpty(),
+                    "userAttributes should be empty after all non-runtime claims are stripped");
+        }
+    }
+
     // ===== loadSessionData =====
 
     @Test
@@ -261,7 +326,7 @@ public class AuthorizationGrantDataOptimizerTest {
         entry.setUserAttributesList(new String[]{LOCAL_CLAIM_URI});
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(false);
 
             AuthorizationGrantCacheEntry result =
@@ -280,7 +345,7 @@ public class AuthorizationGrantDataOptimizerTest {
         // userAttributesList is null by default — indicates entry was not optimized
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
             AuthorizationGrantCacheEntry result =
@@ -292,45 +357,34 @@ public class AuthorizationGrantDataOptimizerTest {
         }
     }
 
-    @Test
+    @Test(expectedExceptions = SessionDataOptimizationV2Exception.class)
     public void testLoad_WhenNoAuthenticatedUser() throws SessionDataOptimizationV2Exception {
+        // userAttributesList is set but there is no authenticated user — data integrity violation
         AuthorizationGrantCacheEntry entry = new AuthorizationGrantCacheEntry();
         entry.setUserAttributes(buildUserAttributes(false));
         entry.setUserAttributesList(new String[]{LOCAL_CLAIM_URI});
-        // No authenticated user
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
-            AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
-
-            assertNotNull(result.getUserAttributesList(),
-                    "userAttributesList should remain set when authenticated user is absent");
-            mockedUtil.verify(
-                    () -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(any(), any()), never());
+            optimizer.load(TEST_KEY, entry);
         }
     }
 
-    @Test
+    @Test(expectedExceptions = SessionDataOptimizationV2Exception.class)
     public void testLoad_WhenFederatedUser() throws SessionDataOptimizationV2Exception {
+        // userAttributesList is set but the user is federated — data integrity violation
         Map<ClaimMapping, String> userAttributes = buildUserAttributes(false);
         AuthorizationGrantCacheEntry entry = buildEntry(userAttributes, mockAuthenticatedUser);
         entry.setUserAttributesList(new String[]{LOCAL_CLAIM_URI});
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(true);
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
 
-            AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
-
-            assertNotNull(result.getUserAttributesList(),
-                    "userAttributesList should remain set for federated users");
-            mockedUtil.verify(
-                    () -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(any(), any()), never());
+            optimizer.load(TEST_KEY, entry);
         }
     }
 
@@ -349,7 +403,7 @@ public class AuthorizationGrantDataOptimizerTest {
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
              MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class)) {
 
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
             mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
                     any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
@@ -386,7 +440,7 @@ public class AuthorizationGrantDataOptimizerTest {
              MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class);
              MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
 
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
             mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
                     any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
@@ -402,20 +456,19 @@ public class AuthorizationGrantDataOptimizerTest {
         }
     }
 
-    @Test
+    @Test(expectedExceptions = SessionDataOptimizationV2Exception.class)
     public void testLoad_WhenClaimMetadataExceptionOccurs() throws Exception {
         // OIDC claim present in userAttributesList but absent from userAttributes;
-        // ClaimMetadataHandler throws — the optimizer must fall back gracefully
+        // ClaimMetadataHandler throws — the optimizer must propagate as SessionDataOptimizationV2Exception
         AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
         entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI});
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
         when(mockAuthenticatedUser.getTenantDomain()).thenReturn(TENANT_DOMAIN);
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
-             MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class);
              MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
 
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
             mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
                     any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
@@ -423,31 +476,24 @@ public class AuthorizationGrantDataOptimizerTest {
             when(mockClaimMetadataHandler.getMappingsMapFromOtherDialectToCarbon(
                     anyString(), anySet(), anyString(), anyBoolean()))
                     .thenThrow(new ClaimMetadataException("Simulated metadata error"));
-            mockedFwUtil.when(() -> FrameworkUtils.buildClaimMappings(any(Map.class)))
-                    .thenReturn(new HashMap<>());
 
-            AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
-
-            assertNull(result.getUserAttributesList(),
-                    "userAttributesList should be cleared even when ClaimMetadataException occurs");
-            mockedUtil.verify(() -> SessionDataOptimizerUtil.getUserClaimValues(any(), any()), never());
+            optimizer.load(TEST_KEY, entry);
         }
     }
 
-    @Test
+    @Test(expectedExceptions = SessionDataOptimizationV2Exception.class)
     public void testLoad_WhenOIDCMappingIsEmpty() throws Exception {
-        // OIDC claim present in userAttributesList but ClaimMetadataHandler returns an empty mapping
+        // OIDC claim present in userAttributesList but ClaimMetadataHandler returns an empty mapping —
+        // the claims cannot be resolved so the optimizer must throw
         AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
         entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI});
         when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
         when(mockAuthenticatedUser.getTenantDomain()).thenReturn(TENANT_DOMAIN);
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
-             MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class);
              MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
 
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
             mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
                     any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
@@ -455,14 +501,8 @@ public class AuthorizationGrantDataOptimizerTest {
             when(mockClaimMetadataHandler.getMappingsMapFromOtherDialectToCarbon(
                     anyString(), anySet(), anyString(), anyBoolean()))
                     .thenReturn(Collections.emptyMap());
-            mockedFwUtil.when(() -> FrameworkUtils.buildClaimMappings(any(Map.class)))
-                    .thenReturn(new HashMap<>());
 
-            AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
-
-            assertNull(result.getUserAttributesList());
-            mockedUtil.verify(() -> SessionDataOptimizerUtil.getUserClaimValues(any(), any()), never());
+            optimizer.load(TEST_KEY, entry);
         }
     }
 
@@ -488,7 +528,7 @@ public class AuthorizationGrantDataOptimizerTest {
              MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class);
              MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
 
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
             mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
                     any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
@@ -513,8 +553,258 @@ public class AuthorizationGrantDataOptimizerTest {
     }
 
     @Test
+    public void testLoad_WhenMultipleClaimsAllResolvedFromUserStore() throws Exception {
+        // Two OIDC claims, both resolved via ClaimMetadataHandler and the user store.
+        AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
+        entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI, OIDC_CLAIM_URI_2});
+        when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
+        when(mockAuthenticatedUser.getTenantDomain()).thenReturn(TENANT_DOMAIN);
+
+        Map<String, String> oidcToCarbonMapping = new HashMap<>();
+        oidcToCarbonMapping.put(OIDC_CLAIM_URI, LOCAL_CLAIM_URI);
+        oidcToCarbonMapping.put(OIDC_CLAIM_URI_2, LOCAL_CLAIM_URI_2);
+
+        Map<String, String> userStoreClaimValues = new HashMap<>();
+        userStoreClaimValues.put(LOCAL_CLAIM_URI, CLAIM_VALUE);
+        userStoreClaimValues.put(LOCAL_CLAIM_URI_2, CLAIM_VALUE_2);
+
+        ClaimMapping resolvedMapping1 = ClaimMapping.build(OIDC_CLAIM_URI, OIDC_CLAIM_URI, null, false);
+        ClaimMapping resolvedMapping2 = ClaimMapping.build(OIDC_CLAIM_URI_2, OIDC_CLAIM_URI_2, null, false);
+        Map<ClaimMapping, String> rebuiltAttributes = new HashMap<>();
+        rebuiltAttributes.put(resolvedMapping1, CLAIM_VALUE);
+        rebuiltAttributes.put(resolvedMapping2, CLAIM_VALUE_2);
+
+        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
+             MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class);
+             MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
+
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
+                    LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
+                    any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimValues(
+                    any(AuthenticatedUser.class), any(String[].class)))
+                    .thenReturn(userStoreClaimValues);
+            mockedClaimMetadata.when(ClaimMetadataHandler::getInstance).thenReturn(mockClaimMetadataHandler);
+            when(mockClaimMetadataHandler.getMappingsMapFromOtherDialectToCarbon(
+                    anyString(), anySet(), anyString(), anyBoolean()))
+                    .thenReturn(oidcToCarbonMapping);
+            mockedFwUtil.when(() -> FrameworkUtils.buildClaimMappings(any(Map.class)))
+                    .thenReturn(rebuiltAttributes);
+
+            AuthorizationGrantCacheEntry result =
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
+
+            assertNull(result.getUserAttributesList());
+            assertEquals(result.getUserAttributes().size(), 2,
+                    "Both OIDC claims should be present in the rebuilt attributes");
+        }
+    }
+
+    @Test
+    public void testLoad_WhenRuntimeAndNonRuntimeClaimsRebuilt() throws Exception {
+        // Entry has a surviving runtime claim in userAttributes (from optimize) AND an OIDC claim
+        // to rebuild from the user store. After load, both should be present and the runtime
+        // claim should have isRuntimeValue re-applied.
+        ClaimMapping runtimeMapping = ClaimMapping.build(RUNTIME_CLAIM_URI, RUNTIME_CLAIM_URI, null, false);
+        runtimeMapping.setIsRuntimeValue(true);
+        Map<ClaimMapping, String> userAttributes = new HashMap<>();
+        userAttributes.put(runtimeMapping, RUNTIME_CLAIM_VALUE);
+
+        AuthorizationGrantCacheEntry entry = buildEntry(userAttributes, mockAuthenticatedUser);
+        entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI});
+        when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
+        when(mockAuthenticatedUser.getTenantDomain()).thenReturn(TENANT_DOMAIN);
+
+        Map<String, String> oidcToCarbonMapping = new HashMap<>();
+        oidcToCarbonMapping.put(OIDC_CLAIM_URI, LOCAL_CLAIM_URI);
+
+        Map<String, String> userStoreClaimValues = new HashMap<>();
+        userStoreClaimValues.put(LOCAL_CLAIM_URI, CLAIM_VALUE);
+
+        ClaimMapping freshRuntimeMapping = ClaimMapping.build(RUNTIME_CLAIM_URI, RUNTIME_CLAIM_URI, null, false);
+        ClaimMapping rebuiltOidcMapping = ClaimMapping.build(OIDC_CLAIM_URI, OIDC_CLAIM_URI, null, false);
+        Map<ClaimMapping, String> rebuiltAttributes = new HashMap<>();
+        rebuiltAttributes.put(freshRuntimeMapping, RUNTIME_CLAIM_VALUE);
+        rebuiltAttributes.put(rebuiltOidcMapping, CLAIM_VALUE);
+
+        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
+             MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class);
+             MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
+
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
+                    LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
+                    any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimValues(
+                    any(AuthenticatedUser.class), any(String[].class)))
+                    .thenReturn(userStoreClaimValues);
+            mockedClaimMetadata.when(ClaimMetadataHandler::getInstance).thenReturn(mockClaimMetadataHandler);
+            when(mockClaimMetadataHandler.getMappingsMapFromOtherDialectToCarbon(
+                    anyString(), anySet(), anyString(), anyBoolean()))
+                    .thenReturn(oidcToCarbonMapping);
+            mockedFwUtil.when(() -> FrameworkUtils.buildClaimMappings(any(Map.class)))
+                    .thenReturn(rebuiltAttributes);
+
+            AuthorizationGrantCacheEntry result =
+                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
+
+            assertNull(result.getUserAttributesList());
+            assertEquals(result.getUserAttributes().size(), 2,
+                    "Both the runtime claim and the rebuilt OIDC claim should be present");
+            result.getUserAttributes().forEach((claimMapping, value) -> {
+                if (RUNTIME_CLAIM_URI.equals(claimMapping.getLocalClaim().getClaimUri())) {
+                    assertTrue(claimMapping.isRuntimeValue(),
+                            "Runtime claim should have isRuntimeValue restored after rebuild");
+                }
+            });
+        }
+    }
+
+    @Test(expectedExceptions = SessionDataOptimizationV2Exception.class)
+    public void testLoad_WhenUserStoreReturnsEmptyForValidOIDCMapping() throws Exception {
+        // Valid OIDC→local mapping returned by ClaimMetadataHandler, but the user store returns
+        // no values for the resolved local claims — optimizer must throw
+        AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
+        entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI});
+        when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
+        when(mockAuthenticatedUser.getTenantDomain()).thenReturn(TENANT_DOMAIN);
+
+        Map<String, String> oidcToCarbonMapping = new HashMap<>();
+        oidcToCarbonMapping.put(OIDC_CLAIM_URI, LOCAL_CLAIM_URI);
+
+        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
+             MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
+
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
+                    LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
+                    any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimValues(
+                    any(AuthenticatedUser.class), any(String[].class)))
+                    .thenReturn(Collections.emptyMap());
+            mockedClaimMetadata.when(ClaimMetadataHandler::getInstance).thenReturn(mockClaimMetadataHandler);
+            when(mockClaimMetadataHandler.getMappingsMapFromOtherDialectToCarbon(
+                    anyString(), anySet(), anyString(), anyBoolean()))
+                    .thenReturn(oidcToCarbonMapping);
+
+            optimizer.load(TEST_KEY, entry);
+        }
+    }
+
+    @Test(expectedExceptions = SessionDataOptimizationV2Exception.class)
+    public void testLoad_WhenUserStoreClaimValueIsAbsent() throws Exception {
+        // User store returns a non-empty map but does not contain a value for the requested local
+        // claim URI — the OIDC claim remains unresolved and the optimizer must throw
+        AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
+        entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI});
+        when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
+        when(mockAuthenticatedUser.getTenantDomain()).thenReturn(TENANT_DOMAIN);
+
+        Map<String, String> oidcToCarbonMapping = new HashMap<>();
+        oidcToCarbonMapping.put(OIDC_CLAIM_URI, LOCAL_CLAIM_URI);
+
+        // User store returns non-empty but for a completely different claim URI
+        Map<String, String> userStoreClaimValues = new HashMap<>();
+        userStoreClaimValues.put("http://wso2.org/claims/other", "someValue");
+
+        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
+             MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
+
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
+                    LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
+                    any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimValues(
+                    any(AuthenticatedUser.class), any(String[].class)))
+                    .thenReturn(userStoreClaimValues);
+            mockedClaimMetadata.when(ClaimMetadataHandler::getInstance).thenReturn(mockClaimMetadataHandler);
+            when(mockClaimMetadataHandler.getMappingsMapFromOtherDialectToCarbon(
+                    anyString(), anySet(), anyString(), anyBoolean()))
+                    .thenReturn(oidcToCarbonMapping);
+
+            optimizer.load(TEST_KEY, entry);
+        }
+    }
+
+    @Test(expectedExceptions = SessionDataOptimizationV2Exception.class)
+    public void testLoad_WhenMultipleClaimsPartiallyResolvedFromUserStore() throws Exception {
+        // Two OIDC claims to resolve; user store returns a value for one but not the other —
+        // the remaining unresolved claim causes a throw
+        AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
+        entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI, OIDC_CLAIM_URI_2});
+        when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
+        when(mockAuthenticatedUser.getTenantDomain()).thenReturn(TENANT_DOMAIN);
+
+        Map<String, String> oidcToCarbonMapping = new HashMap<>();
+        oidcToCarbonMapping.put(OIDC_CLAIM_URI, LOCAL_CLAIM_URI);
+        oidcToCarbonMapping.put(OIDC_CLAIM_URI_2, LOCAL_CLAIM_URI_2);
+
+        // Only the first claim is resolved from the user store
+        Map<String, String> userStoreClaimValues = new HashMap<>();
+        userStoreClaimValues.put(LOCAL_CLAIM_URI, CLAIM_VALUE);
+
+        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
+             MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
+
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
+                    LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
+                    any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimValues(
+                    any(AuthenticatedUser.class), any(String[].class)))
+                    .thenReturn(userStoreClaimValues);
+            mockedClaimMetadata.when(ClaimMetadataHandler::getInstance).thenReturn(mockClaimMetadataHandler);
+            when(mockClaimMetadataHandler.getMappingsMapFromOtherDialectToCarbon(
+                    anyString(), anySet(), anyString(), anyBoolean()))
+                    .thenReturn(oidcToCarbonMapping);
+
+            optimizer.load(TEST_KEY, entry);
+        }
+    }
+
+    @Test(expectedExceptions = SessionDataOptimizationV2Exception.class)
+    public void testLoad_WhenBlankLocalMappingWithOtherClaimsResolving() throws Exception {
+        // Two OIDC claims: one maps to a valid local URI (resolved from user store), the other
+        // has a blank local URI (skipped in the resolution loop). The blank-mapped claim remains
+        // unresolved after the loop completes, causing a throw.
+        String unmappedOidcClaimUri = "http://wso2.org/oidc/claim/unmapped";
+        AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
+        entry.setUserAttributesList(new String[]{OIDC_CLAIM_URI, unmappedOidcClaimUri});
+        when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
+        when(mockAuthenticatedUser.getTenantDomain()).thenReturn(TENANT_DOMAIN);
+
+        Map<String, String> oidcToCarbonMapping = new HashMap<>();
+        oidcToCarbonMapping.put(OIDC_CLAIM_URI, LOCAL_CLAIM_URI);
+        oidcToCarbonMapping.put(unmappedOidcClaimUri, ""); // blank — skipped in the loop
+
+        // User store returns a non-empty result for the valid claim, so the empty-map guard passes
+        Map<String, String> userStoreClaimValues = new HashMap<>();
+        userStoreClaimValues.put(LOCAL_CLAIM_URI, CLAIM_VALUE);
+
+        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
+             MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
+
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
+                    LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
+                    any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.getUserClaimValues(
+                    any(AuthenticatedUser.class), any(String[].class)))
+                    .thenReturn(userStoreClaimValues);
+            mockedClaimMetadata.when(ClaimMetadataHandler::getInstance).thenReturn(mockClaimMetadataHandler);
+            when(mockClaimMetadataHandler.getMappingsMapFromOtherDialectToCarbon(
+                    anyString(), anySet(), anyString(), anyBoolean()))
+                    .thenReturn(oidcToCarbonMapping);
+
+            optimizer.load(TEST_KEY, entry);
+        }
+    }
+
+    @Test(expectedExceptions = SessionDataOptimizationV2Exception.class)
     public void testLoad_WhenSomeClaimsHaveNoLocalMapping() throws Exception {
-        // OIDC claim is in claimsToResolveSet but its mapped local claim URI is blank — it must be silently skipped
+        // OIDC claim has a blank local URI mapping and the user store returns no values —
+        // the claim cannot be resolved so the optimizer must throw
         String unmappedOidcClaimUri = "http://wso2.org/oidc/claim/unmapped";
         AuthorizationGrantCacheEntry entry = buildEntry(new HashMap<>(), mockAuthenticatedUser);
         entry.setUserAttributesList(new String[]{unmappedOidcClaimUri});
@@ -525,10 +815,9 @@ public class AuthorizationGrantDataOptimizerTest {
         oidcToCarbonMapping.put(unmappedOidcClaimUri, ""); // blank local URI — no mapping
 
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
-             MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class);
              MockedStatic<ClaimMetadataHandler> mockedClaimMetadata = mockStatic(ClaimMetadataHandler.class)) {
 
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
             mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
                     any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
@@ -539,14 +828,8 @@ public class AuthorizationGrantDataOptimizerTest {
             when(mockClaimMetadataHandler.getMappingsMapFromOtherDialectToCarbon(
                     anyString(), anySet(), anyString(), anyBoolean()))
                     .thenReturn(oidcToCarbonMapping);
-            mockedFwUtil.when(() -> FrameworkUtils.buildClaimMappings(any(Map.class)))
-                    .thenReturn(new HashMap<>());
 
-            // Must complete without exception; the unmapped claim is just skipped
-            AuthorizationGrantCacheEntry result =
-                    (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
-
-            assertNull(result.getUserAttributesList());
+            optimizer.load(TEST_KEY, entry);
         }
     }
 
@@ -571,7 +854,7 @@ public class AuthorizationGrantDataOptimizerTest {
         try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
              MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class)) {
 
-            mockedUtil.when(() -> SessionDataOptimizerUtil.getSessionDataOptimizationV2ConfigValue(
+            mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(true);
             mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
                     any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
