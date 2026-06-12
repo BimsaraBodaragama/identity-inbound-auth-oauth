@@ -321,21 +321,33 @@ public class AuthorizationGrantDataOptimizerTest {
 
     @Test
     public void testLoad_WhenLocalAttrOptimizationDisabled() throws SessionDataOptimizationV2Exception {
-        AuthorizationGrantCacheEntry entry = new AuthorizationGrantCacheEntry();
-        entry.setUserAttributes(buildUserAttributes(false));
+        // Rebuild is driven by the presence of userAttributesList, not the config state.
+        // Even with config disabled, if the entry was previously optimized, rebuild must proceed.
+        Map<ClaimMapping, String> userAttributes = buildUserAttributes(false);
+        AuthorizationGrantCacheEntry entry = buildEntry(userAttributes, mockAuthenticatedUser);
         entry.setUserAttributesList(new String[]{LOCAL_CLAIM_URI});
+        when(mockAuthenticatedUser.isFederatedUser()).thenReturn(false);
 
-        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class)) {
+        ClaimMapping rebuiltMapping = ClaimMapping.build(LOCAL_CLAIM_URI, LOCAL_CLAIM_URI, null, false);
+        Map<ClaimMapping, String> rebuiltAttributes = new HashMap<>();
+        rebuiltAttributes.put(rebuiltMapping, CLAIM_VALUE);
+
+        try (MockedStatic<SessionDataOptimizerUtil> mockedUtil = mockStatic(SessionDataOptimizerUtil.class);
+             MockedStatic<FrameworkUtils> mockedFwUtil = mockStatic(FrameworkUtils.class)) {
+
             mockedUtil.when(() -> SessionDataOptimizerUtil.isSessionDataOptimizationV2ConfigEnabled(
                     LOCAL_USER_ATTRIBUTE_OPTIMIZATION_ENABLED)).thenReturn(false);
+            mockedUtil.when(() -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(
+                    any(AuthenticatedUser.class), any(Map.class))).then(inv -> null);
+            mockedFwUtil.when(() -> FrameworkUtils.buildClaimMappings(any(Map.class)))
+                    .thenReturn(rebuiltAttributes);
 
             AuthorizationGrantCacheEntry result =
                     (AuthorizationGrantCacheEntry) optimizer.load(TEST_KEY, entry);
 
-            assertNotNull(result.getUserAttributesList(),
-                    "userAttributesList should remain unchanged when optimization is disabled");
-            mockedUtil.verify(
-                    () -> SessionDataOptimizerUtil.addMultiAttributeSeparatorToUserClaims(any(), any()), never());
+            assertNull(result.getUserAttributesList(),
+                    "userAttributesList should be null after rebuild, regardless of config state");
+            assertEquals(result.getUserAttributes(), rebuiltAttributes);
         }
     }
 
