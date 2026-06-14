@@ -1052,26 +1052,21 @@ public final class OAuthUtil {
                     */
                     authenticatedUser.setUserName(authenticatedUser.getUserId());
 
-                    Optional<User> user = getUser(userResidentTenant, authenticatedUserName);
-                    if (user.isPresent()) {
-                        authenticatedOrgUser = new AuthenticatedUser();
-                        authenticatedOrgUser.setUserName(authenticatedUserName);
-                        authenticatedOrgUser.setUserResidentOrganization(authenticatedUser.
-                                getUserResidentOrganization());
-                        authenticatedOrgUser.setAccessingOrganization(authenticatedUser.getUserResidentOrganization());
-                        authenticatedOrgUser.setFederatedUser(false);
-                        authenticatedOrgUser.setUserStoreDomain(user.get().getUserStoreDomain());
-                        String userTenantDomain = OAuthComponentServiceHolder.getInstance().
-                                getOrganizationManager()
-                                .resolveTenantDomain(authenticatedUser.getUserResidentOrganization());
-                        authenticatedOrgUser.setTenantDomain(userTenantDomain);
-                    }
+                    // Build the authenticated org user object.
+                    authenticatedOrgUser = new AuthenticatedUser();
+                    authenticatedOrgUser.setUserName(authenticatedUserName);
+                    authenticatedOrgUser.setUserResidentOrganization(authenticatedUser.
+                            getUserResidentOrganization());
+                    authenticatedOrgUser.setAccessingOrganization(authenticatedUser.getUserResidentOrganization());
+                    authenticatedOrgUser.setFederatedUser(false);
+                    authenticatedOrgUser.setUserStoreDomain(userStoreDomain);
+                    String userTenantDomain = OAuthComponentServiceHolder.getInstance().
+                            getOrganizationManager()
+                            .resolveTenantDomain(authenticatedUser.getUserResidentOrganization());
+                    authenticatedOrgUser.setTenantDomain(userTenantDomain);
                 }
             } catch (OrganizationManagementException | UserIdNotFoundException e) {
                 throw new UserStoreException("Error occurred while constructing the authenticated user.", e);
-            } catch (IdentityApplicationManagementException e) {
-                throw new UserStoreException("Error occurred while getting the user details for the" +
-                        " authenticated user.", e);
             }
         }
 
@@ -1268,12 +1263,17 @@ public final class OAuthUtil {
                     .getAuthorizationCodeDAO().getAuthorizationCodesByUserForOpenidScope(authenticatedUser);
             
             // Retrieve the tokens and auth codes associated with domain-qualified usernames.
+            // Skip if the domain-qualified name is the same as the original to avoid duplicate queries and
+            // redundant cache evictions.
             if (!userName.contains(UserCoreConstants.DOMAIN_SEPARATOR)) {
-                authenticatedUser.setUserName(IdentityUtil.addDomainToName(userName, userStoreDomain));
-                accessTokenDOSet.addAll(OAuthTokenPersistenceFactory.getInstance().getAccessTokenDAO()
-                        .getAccessTokensByUserForOpenidScope(authenticatedUser, true));
-                authorizationCodeDOSet.addAll(OAuthTokenPersistenceFactory.getInstance().getAuthorizationCodeDAO()
-                        .getAuthorizationCodesByUserForOpenidScope(authenticatedUser));
+                String domainQualifiedName = IdentityUtil.addDomainToName(userName, userStoreDomain);
+                if (!StringUtils.equals(userName, domainQualifiedName)) {
+                    authenticatedUser.setUserName(domainQualifiedName);
+                    accessTokenDOSet.addAll(OAuthTokenPersistenceFactory.getInstance().getAccessTokenDAO()
+                            .getAccessTokensByUserForOpenidScope(authenticatedUser, true));
+                    authorizationCodeDOSet.addAll(OAuthTokenPersistenceFactory.getInstance()
+                            .getAuthorizationCodeDAO().getAuthorizationCodesByUserForOpenidScope(authenticatedUser));
+                }
             }
             clearAuthzCodeGrantCachesForTokens(accessTokenDOSet, null);
             clearAuthzCodeGrantCachesForCodes(authorizationCodeDOSet, null);
@@ -1319,28 +1319,46 @@ public final class OAuthUtil {
                                                           String tenantDomain) {
 
         if (CollectionUtils.isNotEmpty(authorizationCodeDOSet)) {
+            List<String> codeIds = new ArrayList<>();
             for (AuthzCodeDO authorizationCodeDO : authorizationCodeDOSet) {
                 String authorizationCode = authorizationCodeDO.getAuthorizationCode();
-                String authzCodeId = authorizationCodeDO.getAuthzCodeId();
                 AuthorizationGrantCacheKey cacheKey = new AuthorizationGrantCacheKey(authorizationCode);
-                AuthorizationGrantCache.getInstance().clearCacheEntryByCodeId(cacheKey, authzCodeId, tenantDomain);
+                if (tenantDomain != null) {
+                    AuthorizationGrantCache.getInstance().clearCacheEntry(cacheKey, tenantDomain);
+                } else {
+                    AuthorizationGrantCache.getInstance().clearCacheEntry(cacheKey);
+                }
+                String authzCodeId = authorizationCodeDO.getAuthzCodeId();
+                if (StringUtils.isNotBlank(authzCodeId)) {
+                    codeIds.add(authzCodeId);
+                }
             }
+            AuthorizationGrantCache.getInstance().clearFromSessionStoreBatch(codeIds);
         }
     }
 
     private static void clearAuthzCodeGrantCachesForTokens(Set<AccessTokenDO> accessTokenDOSet,  String tenantDomain) {
 
         if (CollectionUtils.isNotEmpty(accessTokenDOSet)) {
+            List<String> tokenIds = new ArrayList<>();
             for (AccessTokenDO accessTokenDO : accessTokenDOSet) {
                 if (StringUtils.equalsIgnoreCase(OAuthConstants.GrantTypes.PASSWORD,
                         accessTokenDO.getGrantType())) {
                     continue;
                 }
                 String accessToken = accessTokenDO.getAccessToken();
-                String tokenId = accessTokenDO.getTokenId();
                 AuthorizationGrantCacheKey cacheKey = new AuthorizationGrantCacheKey(accessToken);
-                AuthorizationGrantCache.getInstance().clearCacheEntryByTokenId(cacheKey, tokenId, tenantDomain);
+                if (tenantDomain != null) {
+                    AuthorizationGrantCache.getInstance().clearCacheEntry(cacheKey, tenantDomain);
+                } else {
+                    AuthorizationGrantCache.getInstance().clearCacheEntry(cacheKey);
+                }
+                String tokenId = accessTokenDO.getTokenId();
+                if (StringUtils.isNotBlank(tokenId)) {
+                    tokenIds.add(tokenId);
+                }
             }
+            AuthorizationGrantCache.getInstance().clearFromSessionStoreBatch(tokenIds);
         }
     }
 
