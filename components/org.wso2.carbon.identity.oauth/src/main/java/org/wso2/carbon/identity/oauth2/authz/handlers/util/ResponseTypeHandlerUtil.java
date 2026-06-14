@@ -464,6 +464,7 @@ public class ResponseTypeHandlerUtil {
         Map<ClaimMapping, String> userAttributes = authorizeReqDTO.getUser().getUserAttributes();
         AuthorizationGrantCacheKey authorizationGrantCacheKey = new AuthorizationGrantCacheKey(accessToken);
         AuthorizationGrantCacheEntry authorizationGrantCacheEntry = new AuthorizationGrantCacheEntry(userAttributes);
+        authorizationGrantCacheEntry.setAuthenticatedUser(new AuthenticatedUser(authorizeReqDTO.getUser()));
         if (StringUtils.isNotBlank(authorizeReqDTO.getEssentialClaims())) {
             authorizationGrantCacheEntry.setEssentialClaims(authorizeReqDTO.getEssentialClaims());
         }

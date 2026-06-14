@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.oauth.cache;
 
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.oauth2.model.AccessTokenExtendedAttributes;
 import org.wso2.carbon.identity.oauth2.model.FederatedTokenDO;
@@ -25,6 +26,7 @@ import org.wso2.carbon.identity.openidconnect.model.RequestObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -93,6 +95,31 @@ public class AuthorizationGrantCacheEntry extends CacheEntry {
 
     private boolean isPreIssueAccessTokenActionsExecuted;
 
+    private String[] userAttributesList;
+    private AuthenticatedUser authenticatedUser;
+
+    public AuthenticatedUser getAuthenticatedUser() {
+        return authenticatedUser;
+    }
+
+    public void setAuthenticatedUser(AuthenticatedUser authenticatedUser) {
+
+        /* We store the user attributes under userAttributes in this cache entry. Hence, removing the user attributes
+        map within the authenticatedUser object.*/
+        authenticatedUser.setUserAttributes(null);
+        this.authenticatedUser = authenticatedUser;
+    }
+
+    public String[] getUserAttributesList() {
+
+        return userAttributesList;
+    }
+
+    public void setUserAttributesList(String[] userAttributesList) {
+
+        this.userAttributesList = userAttributesList;
+    }
+
     public String getSubjectClaim() {
         return subjectClaim;
     }
@@ -155,6 +182,48 @@ public class AuthorizationGrantCacheEntry extends CacheEntry {
 
     public AuthorizationGrantCacheEntry() {
 
+    }
+
+    /**
+     * Copy constructor. Creates a shallow copy of the entry with independent copies of
+     * userAttributes and userAttributesList, which are mutated by AuthorizationGrantDataOptimizer.
+     * Collections (amrList, acrValue) are also copied. Object references (authenticatedUser,
+     * requestObject) are shared.
+     *
+     * @param entry the source entry to copy.
+     */
+    public AuthorizationGrantCacheEntry(AuthorizationGrantCacheEntry entry) {
+
+        this.codeId = entry.codeId;
+        this.authorizationCode = entry.authorizationCode;
+        this.tokenId = entry.tokenId;
+        this.userAttributes = entry.userAttributes != null ? new HashMap<>(entry.userAttributes) : null;
+        this.userAttributesList = entry.userAttributesList != null ? entry.userAttributesList.clone() : null;
+        this.nonceValue = entry.nonceValue;
+        this.pkceCodeChallenge = entry.pkceCodeChallenge;
+        this.pkceCodeChallengeMethod = entry.pkceCodeChallengeMethod;
+        this.acrValue = entry.acrValue != null ? new LinkedHashSet<>(entry.acrValue) : null;
+        this.selectedAcrValue = entry.selectedAcrValue;
+        this.amrList = new ArrayList<>(entry.amrList);
+        this.essentialClaims = entry.essentialClaims;
+        this.authTime = entry.authTime;
+        this.maxAge = entry.maxAge;
+        this.requestObject = entry.requestObject;
+        this.hasNonOIDCClaims = entry.hasNonOIDCClaims;
+        this.subjectClaim = entry.subjectClaim;
+        this.tokenBindingValue = entry.tokenBindingValue;
+        this.sessionContextIdentifier = entry.sessionContextIdentifier;
+        this.oidcSessionId = entry.oidcSessionId;
+        this.isRequestObjectFlow = entry.isRequestObjectFlow;
+        this.authenticatedUser = entry.authenticatedUser;
+        this.accessTokenExtendedAttributes = entry.accessTokenExtendedAttributes;
+        this.isApiBasedAuthRequest = entry.isApiBasedAuthRequest;
+        this.impersonator = entry.impersonator;
+        this.federatedTokens = entry.federatedTokens;
+        this.audiences = entry.audiences;
+        this.customClaims = entry.customClaims;
+        this.mappedRemoteClaims = entry.mappedRemoteClaims;
+        this.isPreIssueAccessTokenActionsExecuted = entry.isPreIssueAccessTokenActionsExecuted;
     }
 
     public String getNonceValue() {

@@ -779,6 +779,7 @@ public class ClaimsUtil {
                 tokenRespDTO.getAccessToken());
         AuthorizationGrantCacheEntry authorizationGrantCacheEntry = new AuthorizationGrantCacheEntry(userAttributes);
         authorizationGrantCacheEntry.setSubjectClaim(msgCtx.getAuthorizedUser().getAuthenticatedSubjectIdentifier());
+        authorizationGrantCacheEntry.setAuthenticatedUser(new AuthenticatedUser(msgCtx.getAuthorizedUser()));
 
         Object hasNonOIDCClaimsProperty = msgCtx.getProperty(OIDCConstants.HAS_NON_OIDC_CLAIMS);
         if (hasNonOIDCClaimsProperty != null) {
