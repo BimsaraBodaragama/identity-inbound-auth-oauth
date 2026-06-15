@@ -85,6 +85,15 @@ public class AuthorizationGrantDataOptimizer implements SessionDataOptimizer {
     public Object load(String key, Object entry) throws SessionDataOptimizationV2Exception {
 
         AuthorizationGrantCacheEntry authorizationGrantCacheEntry = (AuthorizationGrantCacheEntry) entry;
+
+        if (!isLocalUserAttributeOptimizationEnabled()) {
+            return authorizationGrantCacheEntry;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Local user attribute optimization is enabled. Restoring local user attributes in " +
+                    "AuthorizationGrantCacheEntry with key: " + key);
+        }
         rebuildLocalUserAttributes(authorizationGrantCacheEntry, key);
         return authorizationGrantCacheEntry;
     }
