@@ -187,7 +187,7 @@ public class AuthorizationGrantDataOptimizerTest {
 
         String[] expectedClaimURIs = {LOCAL_CLAIM_URI, RUNTIME_CLAIM_URI};
         ClaimMapping runtimeMapping = ClaimMapping.build(RUNTIME_CLAIM_URI, RUNTIME_CLAIM_URI, null, false);
-        runtimeMapping.setRuntimeValue(true);
+        runtimeMapping.setIsRuntimeValue(true);
         Map<ClaimMapping, String> filteredAttributes = new HashMap<>();
         filteredAttributes.put(runtimeMapping, RUNTIME_CLAIM_VALUE);
 
@@ -259,7 +259,7 @@ public class AuthorizationGrantDataOptimizerTest {
         // All user attributes are runtime claims — getUserClaimURIsArray returns [] (nothing to re-fetch),
         // filterRuntimeClaims keeps them all. userAttributesList should be set to an empty array.
         ClaimMapping runtimeMapping = ClaimMapping.build(RUNTIME_CLAIM_URI, RUNTIME_CLAIM_URI, null, false);
-        runtimeMapping.setRuntimeValue(true);
+        runtimeMapping.setIsRuntimeValue(true);
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
         userAttributes.put(runtimeMapping, RUNTIME_CLAIM_VALUE);
 
@@ -619,7 +619,7 @@ public class AuthorizationGrantDataOptimizerTest {
         // to rebuild from the user store. After load, both should be present and the runtime
         // claim should have isRuntimeValue re-applied.
         ClaimMapping runtimeMapping = ClaimMapping.build(RUNTIME_CLAIM_URI, RUNTIME_CLAIM_URI, null, false);
-        runtimeMapping.setRuntimeValue(true);
+        runtimeMapping.setIsRuntimeValue(true);
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
         userAttributes.put(runtimeMapping, RUNTIME_CLAIM_VALUE);
 
@@ -850,7 +850,7 @@ public class AuthorizationGrantDataOptimizerTest {
         // A runtime claim surviving in userAttributes must have isRuntimeValue re-applied after
         // concludeLocalAttributeOptimizationReset rebuilds the claim mappings via buildClaimMappings
         ClaimMapping runtimeMapping = ClaimMapping.build(RUNTIME_CLAIM_URI, RUNTIME_CLAIM_URI, null, false);
-        runtimeMapping.setRuntimeValue(true);
+        runtimeMapping.setIsRuntimeValue(true);
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
         userAttributes.put(runtimeMapping, RUNTIME_CLAIM_VALUE);
 
@@ -894,7 +894,7 @@ public class AuthorizationGrantDataOptimizerTest {
         attributes.put(normalMapping, CLAIM_VALUE);
         if (includeRuntimeClaim) {
             ClaimMapping runtimeMapping = ClaimMapping.build(RUNTIME_CLAIM_URI, RUNTIME_CLAIM_URI, null, false);
-            runtimeMapping.setRuntimeValue(true);
+            runtimeMapping.setIsRuntimeValue(true);
             attributes.put(runtimeMapping, RUNTIME_CLAIM_VALUE);
         }
         return attributes;
