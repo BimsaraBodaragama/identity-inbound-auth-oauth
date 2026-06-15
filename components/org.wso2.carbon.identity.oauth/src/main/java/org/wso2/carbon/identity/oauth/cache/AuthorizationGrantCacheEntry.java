@@ -104,8 +104,7 @@ public class AuthorizationGrantCacheEntry extends CacheEntry {
 
     public void setAuthenticatedUser(AuthenticatedUser authenticatedUser) {
 
-        /* We store the user attributes under userAttributes in this cache entry. Hence, removing the user attributes
-        map within the authenticatedUser object.*/
+        // Remove user attributes as it is already stored in the cache entry.
         authenticatedUser.setUserAttributes(null);
         this.authenticatedUser = authenticatedUser;
     }
@@ -193,7 +192,6 @@ public class AuthorizationGrantCacheEntry extends CacheEntry {
      * @param entry the source entry to copy.
      */
     public AuthorizationGrantCacheEntry(AuthorizationGrantCacheEntry entry) {
-
         this.codeId = entry.codeId;
         this.authorizationCode = entry.authorizationCode;
         this.tokenId = entry.tokenId;

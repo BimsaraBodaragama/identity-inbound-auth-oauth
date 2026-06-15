@@ -1522,7 +1522,6 @@ public class AccessTokenIssuer {
                     tokReqMsgCtx.isPreIssueAccessTokenActionsExecuted());
             authorizationGrantCacheEntry.setAudiences(tokReqMsgCtx.getAudiences());
             authorizationGrantCacheEntry.setCustomClaims(tokReqMsgCtx.getAdditionalAccessTokenClaims());
-            authorizationGrantCacheEntry.setAuthenticatedUser(tokReqMsgCtx.getAuthorizedUser());
 
             if (tokReqMsgCtx.getRefreshTokenValidityPeriodInMillis() > 0) {
                 authorizationGrantCacheEntry.setValidityPeriod(
