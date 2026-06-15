@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.oauth.cache;
 
+import java.util.HashMap;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.oauth2.model.AccessTokenExtendedAttributes;
@@ -26,7 +27,6 @@ import org.wso2.carbon.identity.openidconnect.model.RequestObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;

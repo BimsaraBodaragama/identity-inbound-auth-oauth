@@ -413,8 +413,8 @@ public class AccessTokenIssuer {
         return tokenRespDTO;
     }
 
-    private AuthorizationGrantCacheEntry getAuthzGrantCacheEntryFromDeviceCode(
-            OAuth2AccessTokenReqDTO tokenReqDTO, OAuthTokenReqMessageContext tokReqMsgCtx) {
+    private AuthorizationGrantCacheEntry getAuthzGrantCacheEntryFromDeviceCode(OAuth2AccessTokenReqDTO tokenReqDTO,
+                                                                               OAuthTokenReqMessageContext tokReqMsgCtx) {
 
         Optional<String> deviceCodeOptional = getDeviceCode(tokenReqDTO);
         if (deviceCodeOptional.isPresent()) {
@@ -1495,7 +1495,6 @@ public class AccessTokenIssuer {
             AuthorizationGrantCacheKey newCacheKey = new AuthorizationGrantCacheKey(tokenRespDTO.getAccessToken());
             AuthorizationGrantCacheEntry authorizationGrantCacheEntry =
                     new AuthorizationGrantCacheEntry(tokReqMsgCtx.getAuthorizedUser().getUserAttributes());
-            authorizationGrantCacheEntry.setAuthenticatedUser(new AuthenticatedUser(tokReqMsgCtx.getAuthorizedUser()));
             authorizationGrantCacheEntry.setTokenId(tokenRespDTO.getTokenId());
 
             authorizationGrantCacheEntry.setValidityPeriod(
