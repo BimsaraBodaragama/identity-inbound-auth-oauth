@@ -3937,6 +3937,26 @@ public class OAuth2UtilTest {
         assertEquals(OAuth2Util.isFragmentApp(properties), expectedResult, "Failed for case: " + description);
     }
 
+    @DataProvider
+    public Object[][] isApiBasedAuthSupportedGrantData() {
+
+        return new Object[][] {
+                {OAuthConstants.CODE, true},
+                {OAuthConstants.CODE_IDTOKEN, true},
+                {"token", false},
+                {"id_token", false},
+                {null, false}
+        };
+    }
+
+    @Test(dataProvider = "isApiBasedAuthSupportedGrantData")
+    public void testIsApiBasedAuthSupportedGrant(String responseType, boolean expected) {
+
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getParameter(OAuthConstants.OAuth20Params.RESPONSE_TYPE)).thenReturn(responseType);
+        assertEquals(OAuth2Util.isApiBasedAuthSupportedGrant(request), expected);
+    }
+
     private ServiceProviderProperty createProperty(String name, String value) {
 
         ServiceProviderProperty property = new ServiceProviderProperty();

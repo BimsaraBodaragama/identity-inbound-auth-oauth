@@ -6133,8 +6133,9 @@ public class OAuth2Util {
      */
     public static boolean isApiBasedAuthSupportedGrant(HttpServletRequest request) {
 
-        return StringUtils.equals(OAuthConstants.CODE,
-                request.getParameter(OAuthConstants.OAuth20Params.RESPONSE_TYPE));
+        String responseType = request.getParameter(OAuthConstants.OAuth20Params.RESPONSE_TYPE);
+        return StringUtils.equals(OAuthConstants.CODE, responseType) ||
+                StringUtils.equals(OAuthConstants.CODE_IDTOKEN, responseType);
     }
 
     /**

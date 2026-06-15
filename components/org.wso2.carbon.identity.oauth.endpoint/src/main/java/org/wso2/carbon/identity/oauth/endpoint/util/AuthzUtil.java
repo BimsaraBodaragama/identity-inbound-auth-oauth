@@ -4873,8 +4873,19 @@ public class AuthzUtil {
                                     "Error while extracting query params from provided url.", e);
                         }
                         if (isRedirectToClient(location)) {
+                            Map<String, String> fragmentParams;
+                            try {
+                                fragmentParams = getFragmentParamsFromUrl(location);
+                            } catch (UnsupportedEncodingException | URISyntaxException e) {
+                                throw new AuthServiceException(
+                                        AuthServiceConstants.ErrorMessage.ERROR_UNABLE_TO_PROCEED.code(),
+                                        "Error while extracting fragment params from provided url.", e);
+                            }
+                            Map<String, String> authData = new HashMap<>(queryParams);
+                            // For hybrid flows (code id_token) IS returns all OAuth params in the URI fragment.
+                            authData.putAll(fragmentParams);
                             SuccessCompleteAuthResponse successCompleteAuthResponse =
-                                    new SuccessCompleteAuthResponse(queryParams);
+                                    new SuccessCompleteAuthResponse(authData);
                             String jsonPayload = new Gson().toJson(successCompleteAuthResponse);
                             oAuthMessage.getRequest().setAttribute(IS_API_BASED_AUTH_HANDLED, true);
                             return Response.status(HttpServletResponse.SC_OK).entity(jsonPayload).build();
@@ -4931,6 +4942,29 @@ public class AuthzUtil {
             }
         }
         return queryParams;
+    }
+
+    private static Map<String, String> getFragmentParamsFromUrl(String url) throws UnsupportedEncodingException,
+            URISyntaxException {
+
+        if (StringUtils.isBlank(url)) {
+            return new HashMap<>();
+        }
+        String fragment = new URI(url).getFragment();
+        return StringUtils.isNotBlank(fragment) ? parseKeyValuePairs(fragment) : new HashMap<>();
+    }
+
+    private static Map<String, String> parseKeyValuePairs(String encoded) throws UnsupportedEncodingException {
+
+        Map<String, String> params = new HashMap<>();
+        for (String pair : encoded.split(FrameworkUtils.QUERY_SEPARATOR)) {
+            int idx = pair.indexOf(FrameworkUtils.EQUAL);
+            if (idx > 0) {
+                params.put(URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8.toString()),
+                        URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8.toString()));
+            }
+        }
+        return params;
     }
 
     public static void checkPARMandatory(OAuth2Parameters params, OAuthMessage oAuthMessage)

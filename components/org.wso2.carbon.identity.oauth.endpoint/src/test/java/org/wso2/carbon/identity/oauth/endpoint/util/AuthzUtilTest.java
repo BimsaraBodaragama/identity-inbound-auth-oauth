@@ -1940,6 +1940,42 @@ public class AuthzUtilTest extends TestOAuthEndpointBase {
         OAuth2ServiceComponentHolder.setDefaultResponseModeProvider(defaultResponseModeProvider);
     }
 
+    @DataProvider
+    public Object[][] fragmentParamData() {
+
+        Map<String, String> multiParam = new HashMap<>();
+        multiParam.put("code", "abc123");
+        multiParam.put("state", "xyz");
+
+        Map<String, String> hybridParam = new HashMap<>();
+        hybridParam.put("code", "abc123");
+        hybridParam.put("id_token", "eyJhbGci.eyJzdWIi.sig");
+        hybridParam.put("state", "xyz");
+
+        Map<String, String> encodedParam = new HashMap<>();
+        encodedParam.put("state", "hello world");
+
+        return new Object[][] {
+                {"", new HashMap<>()},
+                {null, new HashMap<>()},
+                {"https://example.com", new HashMap<>()},
+                {"https://example.com#code=abc123&state=xyz", multiParam},
+                {"https://example.com#code=abc123&id_token=eyJhbGci.eyJzdWIi.sig&state=xyz", hybridParam},
+                {"https://example.com#state=hello+world", encodedParam},
+                {"https://example.com#noequalssign", new HashMap<>()},
+        };
+    }
+
+    @Test(dataProvider = "fragmentParamData")
+    public void testGetFragmentParamsFromUrl(String url, Map<String, String> expected) throws Exception {
+
+        java.lang.reflect.Method method =
+                AuthzUtil.class.getDeclaredMethod("getFragmentParamsFromUrl", String.class);
+        method.setAccessible(true);
+        Map<String, String> result = (Map<String, String>) method.invoke(null, url);
+        assertEquals(result, expected);
+    }
+
     private void mockSSOConsentService(boolean isConsentMgtEnabled) throws SSOConsentServiceException {
 
         // TODO: Remove mocking consentUtil and test the consent flow as well
