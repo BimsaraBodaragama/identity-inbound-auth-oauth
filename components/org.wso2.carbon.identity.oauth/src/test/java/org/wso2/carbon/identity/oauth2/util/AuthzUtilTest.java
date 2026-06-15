@@ -28,6 +28,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.common.model.AuthorizedScopes;
+import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.application.mgt.AuthorizedAPIManagementService;
 import org.wso2.carbon.identity.oauth.config.OAuthServerConfiguration;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.internal.OAuth2ServiceComponentHolder;
@@ -43,6 +46,7 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -73,6 +77,8 @@ public class AuthzUtilTest {
     private static final String TENANT_DOMAIN = "tenantDomain";
     private static final String USER_RESIDENT_ORG_TENANT = "resident-tenant";
     private static final String ACCESSING_ORG_TENANT = "accessing-tenant";
+    private static final String CLIENT_ID = "test-client-id";
+    private static final String APP_ID = "test-app-id";
 
     @BeforeMethod
     public void setUp() {
@@ -97,6 +103,31 @@ public class AuthzUtilTest {
         if (oAuthServerConfigurationMockedStatic != null) {
             oAuthServerConfigurationMockedStatic.close();
         }
+    }
+
+    @Test
+    public void testGetAppAuthorizedScopes() throws Exception {
+
+        ApplicationManagementService applicationManagementService =
+                Mockito.mock(ApplicationManagementService.class);
+        AuthorizedAPIManagementService authorizedAPIManagementService =
+                Mockito.mock(AuthorizedAPIManagementService.class);
+
+        oAuth2ServiceComponentHolderMockedStatic.when(OAuth2ServiceComponentHolder::getApplicationMgtService)
+                .thenReturn(applicationManagementService);
+        when(applicationManagementService.getApplicationResourceIDByInboundKey(eq(CLIENT_ID), anyString(),
+                eq(TENANT_DOMAIN))).thenReturn(APP_ID);
+        when(oAuth2ServiceComponentHolder.getAuthorizedAPIManagementService())
+                .thenReturn(authorizedAPIManagementService);
+        when(authorizedAPIManagementService.getAuthorizedScopes(APP_ID, TENANT_DOMAIN)).thenReturn(
+                Arrays.asList(new AuthorizedScopes("policy1", Arrays.asList("scope1", "scope2")),
+                        new AuthorizedScopes("policy2", Arrays.asList("scope2", "scope3"))));
+
+        List<String> scopes = AuthzUtil.getAppAuthorizedScopes(CLIENT_ID, TENANT_DOMAIN);
+
+        // Scopes from all authorized scope policies are flattened and de-duplicated.
+        Assert.assertEquals(scopes.size(), 3);
+        Assert.assertTrue(scopes.containsAll(Arrays.asList("scope1", "scope2", "scope3")));
     }
 
     @Test
