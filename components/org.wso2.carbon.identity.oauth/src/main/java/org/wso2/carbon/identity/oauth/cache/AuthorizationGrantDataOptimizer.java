@@ -268,7 +268,7 @@ public class AuthorizationGrantDataOptimizer implements SessionDataOptimizer {
         Map<ClaimMapping, String> finalClaimMappings = FrameworkUtils.buildClaimMappings(userAttributesMap);
         finalClaimMappings.forEach((claimMapping, value) -> {
             if (runtimeClaimURIs.contains(claimMapping.getLocalClaim().getClaimUri())) {
-                claimMapping.setIsRuntimeValue(true);
+                claimMapping.setRuntimeValue(true);
             }
         });
         entry.setUserAttributes(finalClaimMappings);
