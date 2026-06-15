@@ -811,10 +811,7 @@ public class AccessTokenIssuer {
             Map<ClaimMapping, String> userAttributes = cacheEntry.getUserAttributes();
             AuthorizationGrantCacheEntry authorizationGrantCacheEntry =
                     new AuthorizationGrantCacheEntry(userAttributes);
-            if (tokReqMsgCtx.getAuthorizedUser() != null) {
-                authorizationGrantCacheEntry.setAuthenticatedUser(
-                        new AuthenticatedUser(tokReqMsgCtx.getAuthorizedUser()));
-            }
+            authorizationGrantCacheEntry.setAuthenticatedUser(new AuthenticatedUser(tokReqMsgCtx.getAuthorizedUser()));
             if (cacheEntry.getMappedRemoteClaims() != null) {
                 authorizationGrantCacheEntry.setMappedRemoteClaims(cacheEntry
                         .getMappedRemoteClaims());
@@ -1525,10 +1522,7 @@ public class AccessTokenIssuer {
                     tokReqMsgCtx.isPreIssueAccessTokenActionsExecuted());
             authorizationGrantCacheEntry.setAudiences(tokReqMsgCtx.getAudiences());
             authorizationGrantCacheEntry.setCustomClaims(tokReqMsgCtx.getAdditionalAccessTokenClaims());
-            if (tokReqMsgCtx.getAuthorizedUser() != null) {
-                authorizationGrantCacheEntry.setAuthenticatedUser(
-                        new AuthenticatedUser(tokReqMsgCtx.getAuthorizedUser()));
-            }
+            authorizationGrantCacheEntry.setAuthenticatedUser(tokReqMsgCtx.getAuthorizedUser());
 
             if (tokReqMsgCtx.getRefreshTokenValidityPeriodInMillis() > 0) {
                 authorizationGrantCacheEntry.setValidityPeriod(
