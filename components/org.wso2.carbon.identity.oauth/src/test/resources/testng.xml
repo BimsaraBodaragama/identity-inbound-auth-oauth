@@ -139,8 +139,6 @@
             <class name="org.wso2.carbon.identity.oauth2.responsemode.provider.ResponseModeProviderTest"/>
             <class name="org.wso2.carbon.identity.oauth2.token.handlers.claims.ImpersonatedAccessTokenClaimProviderTest"/>
             <class name="org.wso2.carbon.identity.oauth.cache.AuthorizationGrantCacheTest"/>
-            <class name="org.wso2.carbon.identity.oauth.cache.AuthorizationGrantCacheEntryTest"/>
-            <class name="org.wso2.carbon.identity.oauth.cache.AuthorizationGrantDataOptimizerTest"/>
             <class name="org.wso2.carbon.identity.oauth2.rar.AuthorizationDetailsServiceTest" />
             <class name="org.wso2.carbon.identity.oauth2.rar.token.AccessTokenResponseRARHandlerTest"/>
             <class name="org.wso2.carbon.identity.oauth2.rar.token.IntrospectionRARDataProviderTest"/>

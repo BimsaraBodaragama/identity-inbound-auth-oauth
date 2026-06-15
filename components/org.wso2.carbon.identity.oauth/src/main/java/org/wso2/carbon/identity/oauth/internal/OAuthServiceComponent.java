@@ -30,7 +30,6 @@ import org.wso2.carbon.identity.action.execution.api.service.ActionExecutionRequ
 import org.wso2.carbon.identity.action.execution.api.service.ActionExecutionResponseProcessor;
 import org.wso2.carbon.identity.action.execution.api.service.ActionExecutorService;
 import org.wso2.carbon.identity.application.authentication.framework.UserSessionManagementService;
-import org.wso2.carbon.identity.application.authentication.framework.optimizer.SessionDataOptimizer;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.application.mgt.AuthorizedAPIManagementService;
 import org.wso2.carbon.identity.application.mgt.inbound.protocol.ApplicationInboundAuthConfigHandler;
@@ -43,7 +42,6 @@ import org.wso2.carbon.identity.oauth.OauthInboundAuthConfigHandler;
 import org.wso2.carbon.identity.oauth.action.execution.PreIssueAccessTokenRequestBuilder;
 import org.wso2.carbon.identity.oauth.action.execution.PreIssueAccessTokenResponseProcessor;
 import org.wso2.carbon.identity.oauth.action.rule.PreIssueAccessTokenRuleEvaluationDataProvider;
-import org.wso2.carbon.identity.oauth.cache.AuthorizationGrantDataOptimizer;
 import org.wso2.carbon.identity.oauth.cache.OAuthCache;
 import org.wso2.carbon.identity.oauth.common.OAuthConstants;
 import org.wso2.carbon.identity.oauth.common.token.bindings.TokenBinderInfo;
@@ -120,10 +118,6 @@ public class OAuthServiceComponent {
                     authProtocolApplicationService);
             context.getBundleContext().registerService(ApplicationInboundAuthConfigHandler.class,
                     authProtocolApplicationService, null);
-
-            AuthorizationGrantDataOptimizer authorizationGrantDataOptimizer = new AuthorizationGrantDataOptimizer();
-            context.getBundleContext().registerService(SessionDataOptimizer.class.getName(),
-                    authorizationGrantDataOptimizer, null);
 
             registerActionRequestBuilderAndResponseProcessor(context);
             registerRuleEvaluationDataProvider(context);

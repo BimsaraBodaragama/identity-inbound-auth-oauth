@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.ResponseType;
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
-import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.common.model.Claim;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.base.IdentityConstants;
@@ -540,7 +539,6 @@ public class TokenResponseTypeHandler extends AbstractResponseTypeHandler {
         Map<ClaimMapping, String> userAttributes = authorizeReqDTO.getUser().getUserAttributes();
         AuthorizationGrantCacheKey authorizationGrantCacheKey = new AuthorizationGrantCacheKey(accessToken);
         AuthorizationGrantCacheEntry authorizationGrantCacheEntry = new AuthorizationGrantCacheEntry(userAttributes);
-        authorizationGrantCacheEntry.setAuthenticatedUser(new AuthenticatedUser(authorizeReqDTO.getUser()));
         if (StringUtils.isNotBlank(authorizeReqDTO.getEssentialClaims())) {
             authorizationGrantCacheEntry.setEssentialClaims(authorizeReqDTO.getEssentialClaims());
         }

@@ -2269,8 +2269,6 @@ public class AuthzUtil {
         SessionDataCacheEntry sessionDataCacheEntry = oAuthMessage.getSessionDataCacheEntry();
         AuthorizationGrantCacheEntry authorizationGrantCacheEntry = new AuthorizationGrantCacheEntry(
                 sessionDataCacheEntry.getLoggedInUser().getUserAttributes());
-        authorizationGrantCacheEntry.setAuthenticatedUser(
-                new AuthenticatedUser(sessionDataCacheEntry.getLoggedInUser()));
 
         ClaimMapping key = new ClaimMapping();
         Claim claimOfKey = new Claim();
