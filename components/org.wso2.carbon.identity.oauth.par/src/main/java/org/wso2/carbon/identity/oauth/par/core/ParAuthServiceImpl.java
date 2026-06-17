@@ -52,6 +52,12 @@ public class ParAuthServiceImpl implements ParAuthService {
     private static final Log log = LogFactory.getLog(ParAuthServiceImpl.class);
     ParMgtDAO parMgtDAO = ParDAOFactory.getInstance().getParAuthMgtDAO();
 
+    private static final String[] CREDENTIAL_PARAMS = {
+            "client_secret",
+            "client_assertion",
+            "client_assertion_type"
+    };
+
     @Override
     public ParAuthData handleParAuthRequest(Map<String, String> parameters) throws ParCoreException {
 
@@ -60,6 +66,8 @@ public class ParAuthServiceImpl implements ParAuthService {
         ParAuthData parAuthResponse = new ParAuthData();
         parAuthResponse.setrequestURIReference(uuid);
         parAuthResponse.setExpiryTime(getExpiresInValue());
+
+        removeCredentialParams(parameters);
 
         persistParRequest(uuid, parameters, getScheduledExpiry(System.currentTimeMillis()));
 
@@ -78,6 +86,21 @@ public class ParAuthServiceImpl implements ParAuthService {
         }
 
         return parAuthResponse;
+    }
+
+    /**
+     * Removes client authentication credentials from the PAR request parameters before they are persisted.
+     *
+     * @param parameters PAR request parameters (mutated in place).
+     */
+    private void removeCredentialParams(Map<String, String> parameters) {
+
+        if (parameters == null) {
+            return;
+        }
+        for (String credentialParam : CREDENTIAL_PARAMS) {
+            parameters.remove(credentialParam);
+        }
     }
 
     private void persistParRequest(String uuid, Map<String, String> params, long expiresIn)
