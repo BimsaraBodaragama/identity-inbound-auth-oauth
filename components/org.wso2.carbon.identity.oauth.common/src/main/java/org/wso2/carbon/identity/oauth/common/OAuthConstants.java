@@ -360,6 +360,16 @@ public final class OAuthConstants {
     }
 
     /**
+     * Client authentication credential parameters that must not be persisted or reflected into browser-facing
+     * redirects.
+     */
+    public static final String[] CREDENTIAL_PARAMS = {
+            "client_secret",
+            "client_assertion",
+            "client_assertion_type"
+    };
+
+    /**
      * Define OAuth2.0 request parameters
      */
     public static class OAuth20Params {

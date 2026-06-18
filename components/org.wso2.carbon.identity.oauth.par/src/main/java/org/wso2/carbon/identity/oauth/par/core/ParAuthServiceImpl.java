@@ -61,6 +61,8 @@ public class ParAuthServiceImpl implements ParAuthService {
         parAuthResponse.setrequestURIReference(uuid);
         parAuthResponse.setExpiryTime(getExpiresInValue());
 
+        removeCredentialParams(parameters);
+
         persistParRequest(uuid, parameters, getScheduledExpiry(System.currentTimeMillis()));
 
         if (LoggerUtils.isDiagnosticLogsEnabled()) {
@@ -78,6 +80,21 @@ public class ParAuthServiceImpl implements ParAuthService {
         }
 
         return parAuthResponse;
+    }
+
+    /**
+     * Removes client authentication credentials from the PAR request parameters before they are persisted.
+     *
+     * @param parameters PAR request parameters (mutated in place).
+     */
+    private void removeCredentialParams(Map<String, String> parameters) {
+
+        if (parameters == null) {
+            return;
+        }
+        for (String credentialParam : OAuthConstants.CREDENTIAL_PARAMS) {
+            parameters.remove(credentialParam);
+        }
     }
 
     private void persistParRequest(String uuid, Map<String, String> params, long expiresIn)

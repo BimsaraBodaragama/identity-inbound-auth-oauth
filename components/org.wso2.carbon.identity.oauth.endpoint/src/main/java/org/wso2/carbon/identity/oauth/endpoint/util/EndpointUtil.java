@@ -600,7 +600,8 @@ public class EndpointUtil {
         authenticationRequest.setPassiveAuth(checkAuthentication);
         authenticationRequest.setRelyingParty(clientId);
         authenticationRequest.setTenantDomain(OAuth2Util.getTenantDomain(tenantId));
-        authenticationRequest.setRequestQueryParams(reqParams);
+        // Strip client authentication credentials before handing the request params to the authentication framework.
+        authenticationRequest.setRequestQueryParams(removeCredentialParams(reqParams));
 
         //Build an AuthenticationRequestCacheEntry which wraps AuthenticationRequestContext
         return new AuthenticationRequestCacheEntry(authenticationRequest);
@@ -847,7 +848,8 @@ public class EndpointUtil {
             UnsupportedEncodingException, OAuthSystemException {
 
         StringBuilder queryStringBuilder = new StringBuilder();
-        queryStringBuilder.append(entry.getQueryString());
+        // Strip client authentication credentials before they are reflected into the consent page redirect URL.
+        queryStringBuilder.append(removeCredentialParams(entry.getQueryString()));
         if (entry.getQueryString().contains(REQUEST_URI) && params != null) {
             // When request_uri requests come without redirect_uri, we need to append it to the SPQueryParams
             // to be used in storing consent data
@@ -871,6 +873,53 @@ public class EndpointUtil {
         entry.setQueryString(queryString);
         queryString = URLEncoder.encode(queryString, UTF_8);
         return queryString;
+    }
+
+    /**
+     * Removes client authentication credential parameters from a raw request query string so that they are not
+     * reflected into browser-facing redirects (e.g. the consent page URL) or persisted as consent data.
+     *
+     * @param queryString Raw (un-encoded) request query string. May be {@code null}.
+     * @return The query string with credential parameters removed.
+     */
+    public static String removeCredentialParams(String queryString) {
+
+        if (StringUtils.isBlank(queryString)) {
+            return queryString;
+        }
+        List<String> filteredParams = new ArrayList<>();
+        for (String param : queryString.split("&")) {
+            String paramName = param.split("=", 2)[0];
+            boolean isCredentialParam = false;
+            for (String credentialParam : OAuthConstants.CREDENTIAL_PARAMS) {
+                if (credentialParam.equalsIgnoreCase(paramName)) {
+                    isCredentialParam = true;
+                    break;
+                }
+            }
+            if (!isCredentialParam) {
+                filteredParams.add(param);
+            }
+        }
+        return String.join("&", filteredParams);
+    }
+
+    /**
+     * Returns a copy of the given request parameter map with client authentication credential parameters removed.
+     *
+     * @param params Request parameter map. May be {@code null}.
+     * @return A filtered copy of the map, or {@code null} if the input was {@code null}.
+     */
+    public static Map<String, String[]> removeCredentialParams(Map<String, String[]> params) {
+
+        if (params == null) {
+            return null;
+        }
+        Map<String, String[]> filteredParams = new HashMap<>(params);
+        for (String credentialParam : OAuthConstants.CREDENTIAL_PARAMS) {
+            filteredParams.remove(credentialParam);
+        }
+        return filteredParams;
     }
 
     private static boolean isAuthEndpointRedirectParamsFilterConfigAvailable() {

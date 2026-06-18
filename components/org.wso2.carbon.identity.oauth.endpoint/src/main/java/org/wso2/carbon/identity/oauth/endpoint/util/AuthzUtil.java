@@ -2539,10 +2539,13 @@ public class AuthzUtil {
         SessionDataCacheKey cacheKey = new SessionDataCacheKey(sessionDataKey);
         SessionDataCacheEntry sessionDataCacheEntryNew = new SessionDataCacheEntry();
         sessionDataCacheEntryNew.setoAuth2Parameters(params);
-        sessionDataCacheEntryNew.setQueryString(oAuthMessage.getRequest().getQueryString());
+        // Strip client authentication credentials.
+        sessionDataCacheEntryNew.setQueryString(
+                EndpointUtil.removeCredentialParams(oAuthMessage.getRequest().getQueryString()));
 
         if (oAuthMessage.getRequest().getParameterMap() != null) {
-            sessionDataCacheEntryNew.setParamMap(new ConcurrentHashMap<>(oAuthMessage.getRequest().getParameterMap()));
+            sessionDataCacheEntryNew.setParamMap(new ConcurrentHashMap<>(
+                    EndpointUtil.removeCredentialParams(oAuthMessage.getRequest().getParameterMap())));
         }
         sessionDataCacheEntryNew.setValidityPeriod(TimeUnit.MINUTES.toNanos(IdentityUtil.getTempDataCleanUpTimeout()));
         SessionDataCache.getInstance().addToCache(cacheKey, sessionDataCacheEntryNew);

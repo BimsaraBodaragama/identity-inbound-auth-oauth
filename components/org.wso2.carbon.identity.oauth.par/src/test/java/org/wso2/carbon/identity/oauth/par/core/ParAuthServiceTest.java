@@ -17,6 +17,7 @@
  */
 package org.wso2.carbon.identity.oauth.par.core;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.testng.annotations.AfterMethod;
@@ -41,12 +42,16 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Test class for ParAuthService.
@@ -151,6 +156,70 @@ public class ParAuthServiceTest {
             } catch (ParCoreException e) {
                 assertEquals(e.getMessage(), "Error while parsing the expiry time value.");
             }
+        }
+    }
+
+    @Test
+    public void testCredentialParamsRemovedBeforePersistence() throws ParCoreException {
+
+        try (MockedStatic<IdentityConfigParser> identityConfigParser = mockStatic(IdentityConfigParser.class)) {
+            doNothing().when(parMgtDAO).persistRequestData(anyString(), anyString(), anyLong(), anyMap());
+            identityConfigParser.when(IdentityConfigParser::getInstance).thenReturn(mockIdentityConfigParser);
+            when(mockIdentityConfigParser.getConfiguration()).thenReturn(new HashMap<String, Object>() {
+                {
+                    put("OAuth.PAR.ExpiryTime", "60");
+                }
+            });
+
+            Map<String, String> parameters = new HashMap<>();
+            parameters.put("client_id", CLIENT_ID_VALUE);
+            parameters.put("client_secret", "secret");
+            parameters.put("client_assertion", "assertion");
+            parameters.put("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+            parameters.put("scope", "openid");
+
+            parAuthService.handleParAuthRequest(parameters);
+
+            // The supplied map is mutated in place; credentials must be stripped.
+            assertFalse(parameters.containsKey("client_secret"));
+            assertFalse(parameters.containsKey("client_assertion"));
+            assertFalse(parameters.containsKey("client_assertion_type"));
+            // Non-credential parameters must be retained.
+            assertTrue(parameters.containsKey("client_id"));
+            assertTrue(parameters.containsKey("scope"));
+
+            // The persisted parameter map must not carry any credentials.
+            ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+            verify(parMgtDAO).persistRequestData(anyString(), eq(CLIENT_ID_VALUE), anyLong(), paramsCaptor.capture());
+            Map<String, String> persistedParams = paramsCaptor.getValue();
+            assertFalse(persistedParams.containsKey("client_secret"));
+            assertFalse(persistedParams.containsKey("client_assertion"));
+            assertFalse(persistedParams.containsKey("client_assertion_type"));
+        }
+    }
+
+    @Test
+    public void testHandleParAuthRequestWithoutCredentialParams() throws ParCoreException {
+
+        try (MockedStatic<IdentityConfigParser> identityConfigParser = mockStatic(IdentityConfigParser.class)) {
+            doNothing().when(parMgtDAO).persistRequestData(anyString(), anyString(), anyLong(), anyMap());
+            identityConfigParser.when(IdentityConfigParser::getInstance).thenReturn(mockIdentityConfigParser);
+            when(mockIdentityConfigParser.getConfiguration()).thenReturn(new HashMap<String, Object>() {
+                {
+                    put("OAuth.PAR.ExpiryTime", "60");
+                }
+            });
+
+            Map<String, String> parameters = new HashMap<>();
+            parameters.put("client_id", CLIENT_ID_VALUE);
+            parameters.put("scope", "openid");
+
+            ParAuthData parAuthData = parAuthService.handleParAuthRequest(parameters);
+
+            assertNotNull(parAuthData.getrequestURIReference());
+            assertEquals(parameters.size(), 2);
+            assertTrue(parameters.containsKey("client_id"));
+            assertTrue(parameters.containsKey("scope"));
         }
     }
 
