@@ -133,6 +133,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 import static org.wso2.carbon.identity.oauth.common.OAuthConstants.IMPERSONATING_ACTOR;
@@ -1068,5 +1070,69 @@ public class EndpointUtilTest {
 
         EndpointUtil.persistImpersonationInfoToSessionDataCache(sessionDataCacheEntry, oAuthMessage);
         assertEquals(authzReqMsgCtx.isImpersonationRequest(), expected);
+    }
+
+    @DataProvider
+    public Object[][] removeCredentialParamsFromQueryStringData() {
+
+        return new Object[][]{
+                // null and blank inputs are returned as-is.
+                {null, null},
+                {"", ""},
+                {"   ", "   "},
+                // No credential params: query string is unchanged.
+                {"response_type=code&client_id=abc&scope=openid",
+                        "response_type=code&client_id=abc&scope=openid"},
+                // client_secret is stripped, other params and their order are preserved.
+                {"client_id=abc&client_secret=s3cret&scope=openid", "client_id=abc&scope=openid"},
+                // All three credential params are stripped.
+                {"client_id=abc&client_assertion=jwt&client_assertion_type=urn%3Atype&scope=openid",
+                        "client_id=abc&scope=openid"},
+                // A query string consisting solely of a credential param becomes empty.
+                {"client_secret=s3cret", ""},
+                // Matching is case-insensitive.
+                {"Client_Secret=s3cret&scope=openid", "scope=openid"},
+                // A credential param without a value is still stripped.
+                {"client_id=abc&client_secret", "client_id=abc"},
+        };
+    }
+
+    @Test(dataProvider = "removeCredentialParamsFromQueryStringData")
+    public void testRemoveCredentialParamsFromQueryString(String queryString, String expected) {
+
+        assertEquals(EndpointUtil.removeCredentialParams(queryString), expected);
+    }
+
+    @Test
+    public void testRemoveCredentialParamsFromNullParamMap() {
+
+        assertNull(EndpointUtil.removeCredentialParams((Map<String, String[]>) null));
+    }
+
+    @Test
+    public void testRemoveCredentialParamsFromParamMap() {
+
+        Map<String, String[]> params = new HashMap<>();
+        params.put("client_id", new String[]{"abc"});
+        params.put("client_secret", new String[]{"s3cret"});
+        params.put("client_assertion", new String[]{"jwt"});
+        params.put("client_assertion_type", new String[]{"urn:type"});
+        params.put("scope", new String[]{"openid"});
+
+        Map<String, String[]> filtered = EndpointUtil.removeCredentialParams(params);
+
+        // Credential params are removed.
+        assertFalse(filtered.containsKey("client_secret"));
+        assertFalse(filtered.containsKey("client_assertion"));
+        assertFalse(filtered.containsKey("client_assertion_type"));
+        // Non-credential params are retained with their values intact.
+        assertTrue(filtered.containsKey("client_id"));
+        assertEquals(filtered.get("client_id"), new String[]{"abc"});
+        assertTrue(filtered.containsKey("scope"));
+        assertEquals(filtered.size(), 2);
+
+        // The original map is not mutated; a filtered copy is returned.
+        assertTrue(params.containsKey("client_secret"));
+        assertEquals(params.size(), 5);
     }
 }
