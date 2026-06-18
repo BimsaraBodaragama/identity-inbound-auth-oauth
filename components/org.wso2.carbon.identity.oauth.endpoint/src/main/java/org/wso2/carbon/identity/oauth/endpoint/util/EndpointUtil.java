@@ -882,7 +882,7 @@ public class EndpointUtil {
      * @param queryString Raw (un-encoded) request query string. May be {@code null}.
      * @return The query string with credential parameters removed.
      */
-    static String removeCredentialParams(String queryString) {
+    public static String removeCredentialParams(String queryString) {
 
         if (StringUtils.isBlank(queryString)) {
             return queryString;
@@ -910,7 +910,7 @@ public class EndpointUtil {
      * @param params Request parameter map. May be {@code null}.
      * @return A filtered copy of the map, or {@code null} if the input was {@code null}.
      */
-    static Map<String, String[]> removeCredentialParams(Map<String, String[]> params) {
+    public static Map<String, String[]> removeCredentialParams(Map<String, String[]> params) {
 
         if (params == null) {
             return null;
