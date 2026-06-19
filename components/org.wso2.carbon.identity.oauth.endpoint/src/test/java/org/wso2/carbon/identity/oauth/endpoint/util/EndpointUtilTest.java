@@ -1135,4 +1135,26 @@ public class EndpointUtilTest {
         assertTrue(params.containsKey("client_secret"));
         assertEquals(params.size(), 5);
     }
+
+    @Test
+    public void testRemoveCredentialParamsFromParamMapIsCaseInsensitive() {
+
+        Map<String, String[]> params = new HashMap<>();
+        params.put("client_id", new String[]{"abc"});
+        params.put("Client_Secret", new String[]{"s3cret"});
+        params.put("CLIENT_ASSERTION", new String[]{"jwt"});
+        params.put("Client_Assertion_Type", new String[]{"urn:type"});
+        params.put("scope", new String[]{"openid"});
+
+        Map<String, String[]> filtered = EndpointUtil.removeCredentialParams(params);
+
+        // Credential params are removed regardless of their key casing.
+        assertFalse(filtered.containsKey("Client_Secret"));
+        assertFalse(filtered.containsKey("CLIENT_ASSERTION"));
+        assertFalse(filtered.containsKey("Client_Assertion_Type"));
+        // Non-credential params are retained.
+        assertTrue(filtered.containsKey("client_id"));
+        assertTrue(filtered.containsKey("scope"));
+        assertEquals(filtered.size(), 2);
+    }
 }
