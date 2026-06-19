@@ -51,6 +51,11 @@ public class ParAuthServiceImpl implements ParAuthService {
 
     private static final Log log = LogFactory.getLog(ParAuthServiceImpl.class);
     ParMgtDAO parMgtDAO = ParDAOFactory.getInstance().getParAuthMgtDAO();
+    private static final String[] CREDENTIAL_PARAMS = {
+            "client_secret",
+            "client_assertion",
+            "client_assertion_type"
+    };
 
     @Override
     public ParAuthData handleParAuthRequest(Map<String, String> parameters) throws ParCoreException {
@@ -92,7 +97,7 @@ public class ParAuthServiceImpl implements ParAuthService {
         if (parameters == null) {
             return;
         }
-        for (String credentialParam : OAuthConstants.CREDENTIAL_PARAMS) {
+        for (String credentialParam : CREDENTIAL_PARAMS) {
             parameters.remove(credentialParam);
         }
     }
