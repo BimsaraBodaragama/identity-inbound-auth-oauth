@@ -26,6 +26,14 @@ public class DCRMConstants {
     public static final String CORRELATION_ID_MDC = "Correlation-ID";
 
     /**
+     * Config property (read via IdentityUtil.getProperty) that, when set to true, makes the DCR response decode a
+     * multi-URI callback stored internally as "regexp=(url1|url2|...)" back into the original redirect_uris array.
+     * Default (absent/false) preserves the legacy behavior of returning the raw regexp string. Gated per the
+     * support-patch policy so the U2 rollout is behavior-preserving unless the customer opts in.
+     */
+    public static final String DECODE_DCR_REDIRECT_URIS_IN_RESPONSE = "OAuth.DCRM.DecodeRedirectUrisInResponse";
+
+    /**
      * Enum for OAuth DCR service related error messages.
      */
     public enum ErrorMessages {
