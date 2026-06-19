@@ -916,9 +916,14 @@ public class EndpointUtil {
             return null;
         }
         Map<String, String[]> filteredParams = new HashMap<>(params);
-        for (String credentialParam : OAuthConstants.CREDENTIAL_PARAMS) {
-            filteredParams.remove(credentialParam);
-        }
+        filteredParams.keySet().removeIf(paramName -> {
+            for (String credentialParam : OAuthConstants.CREDENTIAL_PARAMS) {
+                if (credentialParam.equalsIgnoreCase(paramName)) {
+                    return true;
+                }
+            }
+            return false;
+        });
         return filteredParams;
     }
 
