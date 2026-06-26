@@ -93,6 +93,8 @@ public class DCRMService {
     private static final String APP_DISPLAY_NAME = "DisplayName";
     private static Pattern clientIdRegexPattern = null;
     private static final String SSA_VALIDATION_JWKS = "OAuth.DCRM.SoftwareStatementJWKS";
+    private static final String CALLBACK_PREFIX = OAuthConstants.CALLBACK_URL_REGEXP_PREFIX + "(";
+    private static final int CALLBACK_PREFIX_LEN = CALLBACK_PREFIX.length();
 
 
     /**
@@ -1116,9 +1118,8 @@ public class DCRMService {
      */
     private List<String> decodeRedirectUris(String callbackUrl) {
 
-        String prefix = OAuthConstants.CALLBACK_URL_REGEXP_PREFIX + "(";
-        String inner = callbackUrl.substring(prefix.length(), callbackUrl.length() - 1);
-        String[] parts = inner.split("(?<!\\\\)\\|");
+        String inner = callbackUrl.substring(CALLBACK_PREFIX_LEN, callbackUrl.length() - 1);
+        String[] parts = inner.split("\\|");
         List<String> redirectUris = new ArrayList<>(parts.length);
         for (String part : parts) {
             redirectUris.add(part.replace("\\?", "?"));
