@@ -1102,10 +1102,10 @@ public class DCRMService {
      * {@link #escapeQueryParamsIfPresent}:
      * <ul>
      *   <li>strip the {@code regexp=} prefix and the wrapping parentheses;</li>
-     *   <li>split on {@code |} - safe because {@code |} is never part of a registered URI: every URI is validated by
-     *       {@code DCRMUtils.isRedirectionUriValid} before being joined, and the only per-URI escaping applied during
-     *       encoding is the first {@code ?} -> {@code \?};</li>
-     *   <li>reverse that single escaping ({@code \?} -> {@code ?}) on each element so the result is byte-identical to
+     *   <li>split on unescaped {@code |} - safe because {@code |} is never part of a registered URI: every URI is
+     *       validated by {@code DCRMUtils.isRedirectionUriValid} before being joined, and the only per-URI escaping
+     *       applied during encoding is {@code ?} -> {@code \?};</li>
+     *   <li>reverse that escaping ({@code \?} -> {@code ?}) on each element so the result is byte-identical to
      *       the originally registered URI.</li>
      * </ul>
      * If {@code createRegexPattern}/{@code escapeQueryParamsIfPresent} ever apply additional escaping, this decoder
@@ -1116,12 +1116,12 @@ public class DCRMService {
      */
     private List<String> decodeRedirectUris(String callbackUrl) {
 
-        String inner = callbackUrl.substring(
-                (OAuthConstants.CALLBACK_URL_REGEXP_PREFIX + "(").length(), callbackUrl.length() - 1);
-        List<String> redirectUris = new ArrayList<>();
-        for (String escapedUri : inner.split("\\|")) {
-            // Reverse escapeQueryParamsIfPresent: the first "\?" was escaped from "?".
-            redirectUris.add(escapedUri.replaceFirst("\\\\\\?", "?"));
+        String prefix = OAuthConstants.CALLBACK_URL_REGEXP_PREFIX + "(";
+        String inner = callbackUrl.substring(prefix.length(), callbackUrl.length() - 1);
+        String[] parts = inner.split("(?<!\\\\)\\|");
+        List<String> redirectUris = new ArrayList<>(parts.length);
+        for (String part : parts) {
+            redirectUris.add(part.replace("\\?", "?"));
         }
         return redirectUris;
     }
