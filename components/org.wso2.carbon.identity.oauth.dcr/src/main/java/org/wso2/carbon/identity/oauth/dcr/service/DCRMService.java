@@ -1069,14 +1069,12 @@ public class DCRMService {
      */
     private List<String> buildRedirectUrisResponse(String callbackUrl) {
 
-        List<String> redirectUrisList = new ArrayList<>();
-        boolean decodeEnabled = Boolean.parseBoolean(
-                IdentityUtil.getProperty(DCRMConstants.DECODE_DCR_REDIRECT_URIS_IN_RESPONSE));
-        if (decodeEnabled && isEncodedMultiUriCallback(callbackUrl)) {
-            redirectUrisList.addAll(decodeRedirectUris(callbackUrl));
-        } else {
-            redirectUrisList.add(callbackUrl);
+        if (Boolean.parseBoolean(IdentityUtil.getProperty(DCRMConstants.DECODE_DCR_REDIRECT_URIS_IN_RESPONSE))
+                && isEncodedMultiUriCallback(callbackUrl)) {
+            return decodeRedirectUris(callbackUrl);
         }
+        List<String> redirectUrisList = new ArrayList<>();
+        redirectUrisList.add(callbackUrl);
         return redirectUrisList;
     }
 
