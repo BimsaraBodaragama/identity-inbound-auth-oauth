@@ -1091,9 +1091,11 @@ public class DCRMService {
      */
     private boolean isEncodedMultiUriCallback(String callbackUrl) {
 
-        return callbackUrl != null
-                && callbackUrl.startsWith(OAuthConstants.CALLBACK_URL_REGEXP_PREFIX + "(")
-                && callbackUrl.endsWith(")");
+        if (StringUtils.isBlank(callbackUrl)) {
+            return false;
+        }
+        String prefix = OAuthConstants.CALLBACK_URL_REGEXP_PREFIX + "(";
+        return callbackUrl.startsWith(prefix) && callbackUrl.endsWith(")");
     }
 
     /**
